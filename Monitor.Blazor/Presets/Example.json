@@ -1,0 +1,111 @@
+{
+  "CurrentFileName": "Example_0",
+  "GroupTags": {
+    "GroupTags": [
+      {
+        "Key": "Group1",
+        "ShowValues": false,
+        "Values": [
+          {
+            "IsActive": true,
+            "Value": "tag1"
+          },
+          {
+            "IsActive": true,
+            "Value": "tag2"
+          },
+          {
+            "IsActive": false,
+            "Value": "waitForDebuger"
+          }
+        ]
+      }
+    ]
+  },
+  "VmsData": {
+    "VmsDataList": [
+      {
+        "UniqueName": "Vm1",
+        "IpAddress": "localhost",
+        "Port": "4231",
+        "ShowCompilerInfo": false,
+        "Compilers": [
+          {
+            "CompilerName": "dotnet",
+            "CompilerPath": "C:\\Program Files\\dotnet\\dotnet.exe"
+          }
+        ],
+        "ShowExtraEnviromentsVariables": false,
+        "ExtraVariables": [
+          {
+            "Key": "Vm1Var1",
+            "Value": "ExampleValue"
+          }
+        ],
+        "ShowVmActualEnviromentVariables": false
+      }
+    ]
+  },
+  "InstancesData": {
+    "Project": "Project1",
+    "Instances": [
+      {
+        "Id": 67,
+        "VmUniqueName": "Vm1",
+        "Team": "Team1",
+        "Name": "InfluxDb",
+        "RunOrStop": false,
+        "StartDelayTime_mSec": 0,
+        "ShowAdvancedConfigurations": false,
+        "RootFolder": "..\\..\\..\\..",
+        "PackageFolder": ".\\",
+        "Configuration": "",
+        "Arguments": "",
+        "CsProj": "",
+        "Groups": "GROUP1;",
+        "ApplicationFileName": "Influxd.exe",
+        "ApplicationPath": "{rootFolder}\\{packageFolder}\\Influxd",
+        "ApplicationWorkingDirectory": "{rootFolder}\\{packageFolder}\\Influxd",
+        "RestApiPort": "",
+        "InstanceId": "",
+        "ShowInheritTagsFromGroup": false,
+        "InheritTagsFromGroup": [],
+        "SupportTags": false,
+        "TagsStr": "",
+        "ShowExtraEnvironmentVariables": false,
+        "ExtraVariables": [],
+        "Disabled": false,
+        "DisabledByGroups": false
+      },
+      {
+        "Id": 52,
+        "VmUniqueName": "Vm1",
+        "Team": "Team1",
+        "Name": "RRS",
+        "RunOrStop": false,
+        "StartDelayTime_mSec": 0,
+        "ShowAdvancedConfigurations": false,
+        "RootFolder": "..\\..\\..\\..",
+        "PackageFolder": ".\\",
+        "Configuration": "",
+        "Arguments": "",
+        "CsProj": "",
+        "Groups": "GROUP2;",
+        "ApplicationFileName": "RRS.exe",
+        "ApplicationPath": "{rootFolder}\\{packageFolder}\\RRS",
+        "ApplicationWorkingDirectory": "{rootFolder}\\{packageFolder}\\RRS",
+        "RestApiPort": "",
+        "InstanceId": "",
+        "ShowInheritTagsFromGroup": false,
+        "InheritTagsFromGroup": [],
+        "SupportTags": false,
+        "TagsStr": "",
+        "ShowExtraEnvironmentVariables": false,
+        "ExtraVariables": [],
+        "Disabled": false,
+        "DisabledByGroups": false
+      }
+    ],
+    "ActiveGroups": "GROUP1;GROUP2;"
+  }
+}

@@ -1,0 +1,30 @@
+﻿@using Montior.Blazor.Data
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        Application Arguments Info
+    </TitleContent>
+    <DialogContent>
+        @foreach (var text in Text)
+        {
+            <MudText>@text</MudText>   
+        }        
+    </DialogContent>
+    <DialogActions>        
+        <MudButton OnClick="Ok">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code
+{
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public List<string> Text { get; set; } = new List<string>();
+
+
+    private void Ok() => MudDialog.Close(DialogResult.Ok(true));    
+}
