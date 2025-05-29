@@ -1,0 +1,541 @@
+﻿@page "/monitor"
+@using AppMonitoring.SharedTypes
+@using Monitor.Blazor.Interfaces
+@using Monitor.Blazor.Services
+@using Montior.Blazor.Data
+@using Newtonsoft.Json
+
+@inject IMonitorService monitorAgentService
+@inject IDialogService DialogService
+
+<MudGrid>
+	<MudCard Class="mt-4">
+		<MudText><strong>Groups</strong></MudText>
+		<TagsGroupsTable groupTags="@groupTags"/>
+		<MudText><strong>Global Variables</strong></MudText>
+		<GlobalEnvVarsTable globalVariables="@globalVariables" />
+		<MudText><strong>Virtual Machines</strong></MudText>
+		<VmsTable vmsData="@vmsData"/>
+		<MudText><strong>Instances</strong></MudText>
+		<InstancesTable OnCompileClicked="@Compile" OnRunOrStopClicked="@RunOrStopChanged" instancesData="@instancesData" PossibleProjects="@possibleProjects" />
+	</MudCard>
+	<MudStack Row="true">
+		<MudPaper Class="pa-4 mt-4">
+			<MudCard Class="mt-4" Style="display: flex; justify-content: space-between;">
+				<MudButton Variant="@(applyButtonVariant ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" OnClick="@ApplyChanges">Apply Changes</MudButton>
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@KillAll">Kill All</MudButton>
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@StartAll">Start All</MudButton>							
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@CompileAll">Compile All</MudButton>
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@GetAllArgs">Get All Args</MudButton>
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@ToggleDebugRelease">~Dbg/Rls All</MudButton>
+			</MudCard>
+		</MudPaper>
+	
+@* 		<MudPaper Class="pa-4 mt-4">
+			<MudCard Style="display: flex; justify-content: space-between;">
+				<MudButton Class="mt-sm-2" Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Compile" Style="height: 40px; line-height: 40px;">Compile</MudButton>
+				<MudTextField @bind-Value="compileInstanceId" Label="Instaces Id" Variant="Variant.Outlined" Style="margin-top: 2px; height: 40px; line-height: 40px;"></MudTextField>
+			</MudCard>
+		</MudPaper> *@
+		<MudPaper Class="pa-4 mt-4">
+			<MudCard Class="mt-4" Style="display: flex; justify-content: space-between;">
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Save">Save...</MudButton>
+				@* <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@(() => {})">Save as...</MudButton> *@
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Load">Load...</MudButton>
+			</MudCard>		
+		</MudPaper>
+		<MudPaper Class="pa-4 mt-4">
+			<MudCard Style="padding-botom: 10px;">
+				<MudTextField Variant="Variant.Outlined" Color="Color.Primary" @bind-Value="activeConfigurationFileName" />
+			</MudCard>
+		</MudPaper>
+	</MudStack>
+	<MudStack Row="true">
+		<MudPaper Class="pa-4 mt-4">
+			<MudSelect @ref="presetsMudSelect" T="string" SelectedValuesChanged="OnSelectedPresetChanged" Label="Start From Preset" AdornmentIcon="@Icons.Material.Outlined.PhonelinkSetup">
+				@foreach (var preset in presets)
+				{
+					<MudSelectItem Value="@preset">@preset</MudSelectItem>
+				}
+			</MudSelect>
+		</MudPaper>
+	</MudStack>
+</MudGrid>
+
+
+@code
+{
+
+
+	private MudSelect<string> presetsMudSelect;
+
+	private void OnSelectedPresetChanged(IEnumerable<string> preset)
+	{
+		if (preset != null && preset.Count() == 1)
+		{
+			var p = preset.FirstOrDefault();
+
+			if (!string.IsNullOrEmpty(p))
+			{
+				activeConfigurationFileName = monitorAgentService.UserFileClosetAvailableName(p);
+				var settings = monitorAgentService.GetSettingsFromPresetsSettings(p).Clone();
+
+				groupTags = settings.GroupTags;
+				globalVariables = settings.GlobalVariables;
+				vmsData = settings.VmsData;
+				instancesData = settings.InstancesData;				
+			}			
+		}
+
+		presetsMudSelect.SelectedValues = null;
+
+		InvokeAsync(StateHasChanged);
+	}
+
+	private void Load()
+	{
+		var settings = monitorAgentService.GetSettingsFromUserSettings(activeConfigurationFileName).Clone();
+
+		groupTags = settings.GroupTags;
+		globalVariables = settings.GlobalVariables;
+		vmsData = settings.VmsData;
+		instancesData = settings.InstancesData;
+
+		InvokeAsync(StateHasChanged);
+	}
+
+	private List<string> presets = new List<string>();
+
+	private string activeConfigurationFileName;
+
+	private void Save()
+	{
+		ApplyChanges();
+	}
+
+	private void RunOrStopChanged(int id)
+	{
+		ApplyChanges();
+	}
+
+	private void Compile(int compileInstanceId)
+	{
+		try
+		{
+			ApplyChanges();
+
+			{
+				var lastAppliedSettings = monitorAgentService.GetCurrentSettings().Clone();
+
+				var ins = lastAppliedSettings.InstancesData.Instances.FirstOrDefault(x => x.Id == compileInstanceId);
+				if (ins != null)
+				{
+					var vm = lastAppliedSettings.VmsData.VmsDataList.FirstOrDefault(x => x.UniqueName == ins.VmUniqueName);
+					if (vm != null)
+					{
+						var ip = vm.IpAddress;
+						var port = vm.Port;
+
+						if (!string.IsNullOrEmpty(ins.CsProj))
+							monitorAgentService.SetCompilerRequest(new IpAddress() { Ip = ip, Port = port }, new CompileInfo() { InstanceId = compileInstanceId, Configuration = ins.Configuration, });
+					}
+				}				
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.Write(ex);
+		}
+	}
+
+	private void ApplyChanges()
+	{		
+		var monitorPageSettings = new MonitorPageSettings()
+			{
+				CurrentFileName = activeConfigurationFileName,
+				InstancesData = instancesData,
+				VmsData = vmsData,
+				GroupTags = groupTags,
+				GlobalVariables = globalVariables,
+			};
+
+		monitorAgentService.SetAllAgentsSettings(monitorPageSettings.Clone());
+	}
+
+	private void KillAll()
+	{
+		try
+		{
+			foreach (var inst in instancesData.Instances)
+			{
+				try
+				{
+					if (!inst.Disabled && !inst.DisabledByGroups)
+						inst.RunOrStop = false;
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
+
+		ApplyChanges();
+	}
+
+	private void CompileAll()
+	{
+		try
+		{
+			ApplyChanges();
+
+			foreach (var inst in instancesData.Instances)
+			{
+				try
+				{
+					if (!inst.Disabled && !inst.DisabledByGroups)
+						Compile(inst.Id);
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}	
+	}
+
+	private void ToggleDebugRelease()
+	{
+		const string debugString = "Debug";
+		const string releaseString = "Release";
+
+		try
+		{
+			var configurationCount = new Dictionary<string, int>();
+			foreach (var inst in instancesData.Instances)
+			{
+				try
+				{
+					if (!inst.Disabled && !inst.DisabledByGroups)
+					{
+						if (!string.IsNullOrEmpty(inst.Configuration)
+							&&
+							(inst.Configuration.ToLower() == debugString.ToLower()
+							||
+							inst.Configuration.ToLower() == releaseString.ToLower()))
+						{
+							if (!configurationCount.ContainsKey(inst.Configuration.ToLower()))
+								configurationCount.Add(inst.Configuration.ToLower(), 1);
+
+							configurationCount[inst.Configuration.ToLower()]++;
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
+				}
+			}
+
+			if (configurationCount.Count > 0)
+			{
+				var configNewValue = debugString;
+
+				var configToToggle = configurationCount.OrderBy(x => x.Value).First().Key;
+				if (configToToggle == debugString.ToLower())
+					configNewValue = releaseString;
+
+				foreach (var inst in instancesData.Instances)
+				{
+					try
+					{
+						if (!string.IsNullOrEmpty(inst.Configuration)
+							&&
+							(inst.Configuration.ToLower() == debugString.ToLower()
+							||
+							inst.Configuration.ToLower() == releaseString.ToLower()))
+						{
+							inst.Configuration = configNewValue;
+						}
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine(ex);
+					}
+				}
+			}
+
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
+
+		ApplyChanges();
+	}
+
+	private void GetAllArgs()
+	{
+		try
+		{
+			ApplyChanges();
+
+			Thread.Sleep(1000);
+
+			List<string> args = new List<string>();
+
+			var currentSettingsInAgentsFormat = monitorAgentService.GetCurrentSettingsInAgentsFormat();
+			foreach (var vm in currentSettingsInAgentsFormat)
+			{
+				var agentSet = vm.Value;
+				foreach (var app in agentSet.Item2.ProcessInstancesSettings)
+				{
+					args.Add($"{app.Name}:");
+					args.Add($"\tArgs: {app.Arguments}");
+					args.Add($"\tEnvVars:");
+					foreach (var envVar in app.Variables)
+						args.Add($"\t\t{envVar.Item1}={envVar.Item2}");
+					args.Add($"\tVmEnvVars:");
+					foreach (var vmEnvVar in agentSet.Item2.VmInstanceSettings.Variables)
+						args.Add($"\t\t{vmEnvVar.Item1}={vmEnvVar.Item2}");
+					args.Add("--------");
+				}
+			}
+
+			var options = new DialogOptions() { MaxWidth = MaxWidth.ExtraExtraLarge };
+			var parameters = new DialogParameters<ArgsDialog>();
+			parameters.Add("Text", args);
+			DialogService.ShowAsync<ArgsDialog>("", parameters, options);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
+	}
+
+	private void StartAll()
+	{
+		try
+		{
+			foreach (var inst in instancesData.Instances)
+			{
+				try
+				{
+					if (!inst.Disabled && !inst.DisabledByGroups)
+						inst.RunOrStop = true;
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
+
+		ApplyChanges();
+	}
+
+	private UI_GlobalVariables globalVariables { get; set; } = new UI_GlobalVariables();
+	private UI_GroupTags groupTags { get; set; } = new UI_GroupTags();
+	private UI_VmsData vmsData { get; set; } = new UI_VmsData();
+	private UI_InstancesData instancesData { get; set; } = new UI_InstancesData();
+	private List<string> possibleProjects { get; set; } = new List<string>();
+
+	private Timer updateTimer;
+
+	protected override void OnInitialized()
+	{
+		InitPresetsList();
+
+		var m = monitorAgentService.GetCurrentSettings().Clone();
+
+		groupTags = m.GroupTags;
+		globalVariables = m.GlobalVariables;
+		instancesData = m.InstancesData;
+		vmsData = m.VmsData;
+		activeConfigurationFileName = m.CurrentFileName;
+
+		updateTimer = new Timer(UpdateStatusWrapper, null, 2500, Timeout.Infinite);
+
+		monitorAgentService.SettingsChangedFromRestApi -= SettingsChangedFromRestApi;
+		monitorAgentService.SettingsChangedFromRestApi += SettingsChangedFromRestApi;
+	}
+
+	private void SettingsChangedFromRestApi(MonitorPageSettings monitorPageSettings)
+	{
+		groupTags = monitorPageSettings.GroupTags;
+		globalVariables = monitorPageSettings.GlobalVariables;
+		instancesData = monitorPageSettings.InstancesData;
+		vmsData = monitorPageSettings.VmsData;
+	}
+
+	private void InitPresetsList()
+	{
+		presets.AddRange(monitorAgentService.GetPresetsSettingsList());
+		possibleProjects = monitorAgentService.GetPossibleProjectsList();
+	}
+
+	private bool applyButtonVariant = false;
+
+
+	private void CompareCurrentVsLastApply()
+	{
+		try
+		{
+			var lastAppliedSettings = monitorAgentService.GetCurrentSettings();
+
+			applyButtonVariant = (!lastAppliedSettings.GroupTags.Compare(groupTags)
+				||
+				!lastAppliedSettings.GlobalVariables.Compare(globalVariables)
+				||
+				!lastAppliedSettings.VmsData.Compare(vmsData)
+				||
+				!lastAppliedSettings.InstancesData.Compare(instancesData));
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
+	}
+
+	private void UpdateStatusWrapper(object obj)
+	{
+		try
+		{
+			UpdateStatus(groupTags, globalVariables, vmsData, instancesData);
+			CompareCurrentVsLastApply();
+			InvokeAsync(StateHasChanged);
+		}
+		catch
+		{
+
+		}
+		finally
+		{
+			updateTimer.Change(2500, Timeout.Infinite);	
+		}
+	}
+
+	private void UpdateStatus(UI_GroupTags groupTags, UI_GlobalVariables globalVariables, UI_VmsData vmsData, UI_InstancesData instancesData)
+	{
+		var infos = monitorAgentService.GetAgentsPeriodicInfos();
+
+		//var infos = new Dictionary<string, Tuple<VmInfo, Dictionary<int, ProcessInstanceInfo>>>();		
+		//
+		//try
+		//{
+		//
+		//	
+		//	foreach (var vm in vmsData.VmsDataList.Select(x => new { vmName = x.UniqueName, ipAdd = new IpAddress() { Ip = x.IpAddress, Port = x.Port } }))
+		//	{
+		//		try
+		//		{
+		//			var v = monitorAgentService.GetVmInfoAndListProcessInstaceInfo(vm.ipAdd);
+		//			var vv = Tuple.Create(v.Item1, v.Item2.Where(x => x.Id.HasValue).ToDictionary(x => x.Id.Value, x => x));
+		//
+		//			infos.TryAdd(vm.vmName, vv);
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			Console.WriteLine(ex);
+		//		}
+		//	}
+		//}
+		//catch (Exception ex)
+		//{
+		//	Console.WriteLine(ex);
+		//}
+
+		try
+		{
+			foreach (var vmData in vmsData.VmsDataList)
+			{
+				if (infos.ContainsKey(vmData.UniqueName))
+				{
+					var inf = infos[vmData.UniqueName];
+					vmData.ActualVariables = inf.Item1.Variables.Select(x => new KeyValue() { Key = x.Item1, Value = x.Item2}).ToList();
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
+
+		var instanceInfos = new Dictionary<int, UI_Instance>();
+
+		try
+		{
+
+			foreach (var i in instancesData.Instances)
+			{
+				try
+				{
+					instanceInfos.TryAdd(i.Id, i);
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
+
+		try
+		{			
+			foreach (var instData in instanceInfos)
+			{
+				try
+				{
+
+					if (infos.ContainsKey(instData.Value.VmUniqueName))
+					{
+						var instInVm= infos[instData.Value.VmUniqueName];
+
+						if (instInVm.Item2.ContainsKey(instData.Value.Id))
+						{
+							var instStatus = instInVm.Item2[instData.Value.Id];
+
+							instData.Value.IsRunning = instStatus.IsCompiling ? "Compiling" : instStatus.IsRunning ? "Running" : "Stopped";
+
+							if (instData.Value.IsRunning == "Running")
+							{
+								instData.Value.ProcessName = instStatus.ProcessName;
+								instData.Value.ProcessId = instStatus.ProcessId;
+								instData.Value.RunningFor = instStatus.LastStartTime.HasValue ? DateTime.Now - instStatus.LastStartTime.Value : new TimeSpan(0, 0, 0);
+							}
+							else
+							{
+								instData.Value.ProcessName = string.Empty;
+								instData.Value.ProcessId = null;
+								instData.Value.RunningFor = new TimeSpan(0, 0, 0);
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
+	}
+}

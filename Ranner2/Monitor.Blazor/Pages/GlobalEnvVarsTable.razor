@@ -1,0 +1,104 @@
+﻿@using Montior.Blazor.Data
+@using MudBlazor
+
+<MudCard>
+	<MudTr>
+		
+		<MudIconButton Size="Size.Medium" Icon="@(globalVariables.ShowGlobalVariables == false ? @Icons.Material.Outlined.ViewList : @Icons.Material.Filled.ViewList)" Color="@Color.Primary" OnClick="@(() => ShowExtraEnvironmentVariables())" />
+		
+		<td colspan="100">			
+			@if (globalVariables.ShowGlobalVariables)
+			{
+				<MudCard Elevation="0">
+
+					<MudCardHeader>
+						<CardHeaderContent>
+							<MudText Typo="Typo.body1">Global Environment Variables</MudText>
+						</CardHeaderContent>
+					</MudCardHeader>
+
+					<MudCardContent Class="pa-0">
+						<MudTable Items="@globalVariables.GlobalVariables" Context="envVarsContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0"
+								  RowEditPreview="ExtraVariablesEdit"
+								  RowEditCommit="ExtraVariablesCommit">
+							<ColGroup>
+								<col style="width:0px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:500px;" />
+							</ColGroup>
+							<HeaderContent>
+								<MudTh />
+								<MudTh><strong>Active</strong></MudTh>
+								<MudTh><strong>Name</strong></MudTh>
+								<MudTh><strong>Value</strong></MudTh>
+								<MudTh><strong>DefaultValue</strong></MudTh>
+								<MudTh><strong>Description</strong></MudTh>
+							</HeaderContent>
+							<RowTemplate>
+								<MudTd />
+								<MudTd DataLabel="Active">@envVarsContext.Active</MudTd>
+								<MudTd DataLabel="Name">@envVarsContext.Key</MudTd>
+								<MudTd DataLabel="Value">@envVarsContext.Value</MudTd>
+								<MudTd DataLabel="Value">@envVarsContext.DefaultValue</MudTd>
+								<MudTd DataLabel="Value">@envVarsContext.Description</MudTd>
+								<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.RemoveCircle" Color="Color.Error" OnClick="@(() => RemoveEnvVarItem(envVarsContext))"></MudIconButton>
+							</RowTemplate>
+							<RowEditingTemplate>
+								<MudTd />
+								<MudTd>
+									<MudTextField @bind-Value="@envVarsContext.Active" Required />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@envVarsContext.Key" Required />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@envVarsContext.Value" Required />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@envVarsContext.DefaultValue" />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@envVarsContext.Description" />
+								</MudTd>
+								<MudTd />
+							</RowEditingTemplate>
+						</MudTable>
+					</MudCardContent>
+				</MudCard>			
+				<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.AddCircle" Disabled="@envVarDisable" Color="Color.Success" OnClick="@(() => { @globalVariables.GlobalVariables.Add(new KeyValueComplex() { Active = false, Key = "key", Value = "value", DefaultValue = "", Description = ""}); })" />
+			}
+		</td>
+	</MudTr>
+</MudCard>
+
+@code
+{
+	[Parameter] public UI_GlobalVariables globalVariables { get; set; }
+
+	private bool envVarDisable;
+
+	private void ExtraVariablesEdit(object element)
+	{
+		envVarDisable = true;
+		StateHasChanged();
+	}
+
+	private void ExtraVariablesCommit(object element)
+	{
+		envVarDisable = false;
+		StateHasChanged();
+	}
+
+	private void RemoveEnvVarItem(KeyValueComplex keyVal)
+	{
+		globalVariables.GlobalVariables.Remove(keyVal);
+	}
+
+	private void ShowExtraEnvironmentVariables()
+	{
+		globalVariables.ShowGlobalVariables = !globalVariables.ShowGlobalVariables;
+	}
+}

@@ -1,0 +1,715 @@
+{
+  "VmInstanceSettings": {
+    "GuidString": "8ec47838-1aba-465a-86ef-1e71aa555d74",
+    "CompileTool": [
+      {
+        "Item1": "dotnet",
+        "Item2": "C:\\Program Files\\dotnet\\dotnet.exe"
+      }
+    ],
+    "Variables": [
+      {
+        "Item1": "Resm__Dds__DomainId",
+        "Item2": "78"
+      }
+    ]
+  },
+  "ProcessInstancesRunStateSettings": [
+    {
+      "Id": 67,
+      "RunState": 1
+    },
+    {
+      "Id": 6,
+      "RunState": 1
+    },
+    {
+      "Id": 17,
+      "RunState": 0
+    },
+    {
+      "Id": 26,
+      "RunState": 1
+    },
+    {
+      "Id": 30,
+      "RunState": 1
+    },
+    {
+      "Id": 25,
+      "RunState": 1
+    },
+    {
+      "Id": 52,
+      "RunState": 1
+    }
+  ],
+  "ProcessInstancesSettings": [
+    {
+      "Id": 67,
+      "VmUniqueName": "Vm1",
+      "Name": "InfluxDb",
+      "CsProj": "",
+      "ApplicationFileName": "Elisra.EsmServer.Influxd.exe",
+      "ApplicationPath": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.Influxd",
+      "ApplicationWorkingDirectory": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.Influxd",
+      "RestApiPort": "",
+      "InstanceId": "",
+      "Arguments": "",
+      "Variables": [
+        {
+          "Item1": "Services:MyService:Name",
+          "Item2": "InfluxDb"
+        },
+        {
+          "Item1": "Services:InfluxDb:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:RestApiPort",
+          "Item2": "5517"
+        },
+        {
+          "Item1": "Services:Extraction 2:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 2:RestApiPort",
+          "Item2": "5518"
+        },
+        {
+          "Item1": "Services:Extraction 3:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 3:RestApiPort",
+          "Item2": "5519"
+        },
+        {
+          "Item1": "Services:Extraction 4:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 4:RestApiPort",
+          "Item2": "5520"
+        },
+        {
+          "Item1": "Services:Connect:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Connect:RestApiPort",
+          "Item2": "5417"
+        },
+        {
+          "Item1": "Services:ResmManager:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:ResmManager:RestApiPort",
+          "Item2": "5419"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:RestApiPort",
+          "Item2": "5418"
+        },
+        {
+          "Item1": "Services:Blazor-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:WPF-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RRS:Ip",
+          "Item2": "localhost"
+        }
+      ]
+    },
+    {
+      "Id": 6,
+      "VmUniqueName": "Vm1",
+      "Name": "Extraction 1",
+      "CsProj": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ExtractionFlow.Runner\\Development\\_code\\Elisra.EsmServer.ExtractionFlow.Runner.Argos\\Elisra.EsmServer.ExtractionFlow.Runner.Argos.csproj",
+      "ApplicationFileName": "Elisra.EsmServer.ExtractionFlow.Runner.Argos.exe",
+      "ApplicationPath": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ExtractionFlow.Runner\\Deployment\\~Debug\\Argos\\net6.0",
+      "ApplicationWorkingDirectory": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ExtractionFlow.Runner\\Deployment\\~Debug\\Argos\\net6.0",
+      "RestApiPort": "5517",
+      "InstanceId": "1",
+      "Arguments": " -tags argos;store_metrices_in_db;wbr;lab;tamar;RemoteInquiriesInAnotherPod;desktop;SobEobPdwsSync;subscribeEsmLibByDDS;ext_flow_1;;flow_tamar_tcp_1ef;flow_receiver_udp_unicast_1ef;",
+      "Variables": [
+        {
+          "Item1": "AttachDebuggerOnRun",
+          "Item2": "false"
+        },
+        {
+          "Item1": "Services:MyService:Name",
+          "Item2": "Extraction 1"
+        },
+        {
+          "Item1": "Services:MyService:InstanceId",
+          "Item2": "1"
+        },
+        {
+          "Item1": "Services:MyService:RestApiPort",
+          "Item2": "5517"
+        },
+        {
+          "Item1": "Services:InfluxDb:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:RestApiPort",
+          "Item2": "5517"
+        },
+        {
+          "Item1": "Services:Extraction 2:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 2:RestApiPort",
+          "Item2": "5518"
+        },
+        {
+          "Item1": "Services:Extraction 3:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 3:RestApiPort",
+          "Item2": "5519"
+        },
+        {
+          "Item1": "Services:Extraction 4:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 4:RestApiPort",
+          "Item2": "5520"
+        },
+        {
+          "Item1": "Services:Connect:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Connect:RestApiPort",
+          "Item2": "5417"
+        },
+        {
+          "Item1": "Services:ResmManager:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:ResmManager:RestApiPort",
+          "Item2": "5419"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:RestApiPort",
+          "Item2": "5418"
+        },
+        {
+          "Item1": "Services:Blazor-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:WPF-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RRS:Ip",
+          "Item2": "localhost"
+        }
+      ]
+    },
+    {
+      "Id": 17,
+      "VmUniqueName": "Vm1",
+      "Name": "Connect",
+      "CsProj": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ConnectAndInquiries.Runner\\Development\\_code\\Elisra.EsmServer.ConnectAndInquiries.Runner.Argos\\Elisra.EsmServer.ConnectAndInquiries.Runner.Argos.csproj",
+      "ApplicationFileName": "Elisra.EsmServer.ConnectAndInquiries.Runner.Argos.exe",
+      "ApplicationPath": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ConnectAndInquiries.Runner\\Deployment\\~Debug\\Argos\\net6.0",
+      "ApplicationWorkingDirectory": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ConnectAndInquiries.Runner\\Deployment\\~Debug\\Argos\\net6.0",
+      "RestApiPort": "5417",
+      "InstanceId": "",
+      "Arguments": " -tags argos;store_metrices_in_db;wbr;lab;tamar;local_object_storage;RemoteInquiriesInAnotherPod;subscribeToNavByRabbit;subscribeEsmLibByDDS;;flow_tamar_tcp_1ef;flow_receiver_udp_unicast_1ef;",
+      "Variables": [
+        {
+          "Item1": "AttachDebuggerOnRun",
+          "Item2": "false"
+        },
+        {
+          "Item1": "Services:MyService:Name",
+          "Item2": "Connect"
+        },
+        {
+          "Item1": "Services:MyService:RestApiPort",
+          "Item2": "5417"
+        },
+        {
+          "Item1": "Services:InfluxDb:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:RestApiPort",
+          "Item2": "5517"
+        },
+        {
+          "Item1": "Services:Extraction 2:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 2:RestApiPort",
+          "Item2": "5518"
+        },
+        {
+          "Item1": "Services:Extraction 3:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 3:RestApiPort",
+          "Item2": "5519"
+        },
+        {
+          "Item1": "Services:Extraction 4:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 4:RestApiPort",
+          "Item2": "5520"
+        },
+        {
+          "Item1": "Services:Connect:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Connect:RestApiPort",
+          "Item2": "5417"
+        },
+        {
+          "Item1": "Services:ResmManager:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:ResmManager:RestApiPort",
+          "Item2": "5419"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:RestApiPort",
+          "Item2": "5418"
+        },
+        {
+          "Item1": "Services:Blazor-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:WPF-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RRS:Ip",
+          "Item2": "localhost"
+        }
+      ]
+    },
+    {
+      "Id": 26,
+      "VmUniqueName": "Vm1",
+      "Name": "ResmManager",
+      "CsProj": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ResmManager.Runner\\Development\\_code\\Elisra.EsmServer.ResmManager.Runner.Argos\\Elisra.EsmServer.ResmManager.Runner.Argos.csproj",
+      "ApplicationFileName": "Elisra.EsmServer.ResmManager.Runner.Argos.exe",
+      "ApplicationPath": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ResmManager.Runner\\Deployment\\~Debug\\Argos\\net6.0",
+      "ApplicationWorkingDirectory": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.ResmManager.Runner\\Deployment\\~Debug\\Argos\\net6.0",
+      "RestApiPort": "5419",
+      "InstanceId": "",
+      "Arguments": "-dev_deployment -tags argos;store_metrices_in_db;;",
+      "Variables": [
+        {
+          "Item1": "AttachDebuggerOnRun",
+          "Item2": "false"
+        },
+        {
+          "Item1": "Services:MyService:Name",
+          "Item2": "ResmManager"
+        },
+        {
+          "Item1": "Services:MyService:RestApiPort",
+          "Item2": "5419"
+        },
+        {
+          "Item1": "Services:InfluxDb:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:RestApiPort",
+          "Item2": "5517"
+        },
+        {
+          "Item1": "Services:Extraction 2:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 2:RestApiPort",
+          "Item2": "5518"
+        },
+        {
+          "Item1": "Services:Extraction 3:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 3:RestApiPort",
+          "Item2": "5519"
+        },
+        {
+          "Item1": "Services:Extraction 4:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 4:RestApiPort",
+          "Item2": "5520"
+        },
+        {
+          "Item1": "Services:Connect:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Connect:RestApiPort",
+          "Item2": "5417"
+        },
+        {
+          "Item1": "Services:ResmManager:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:ResmManager:RestApiPort",
+          "Item2": "5419"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:RestApiPort",
+          "Item2": "5418"
+        },
+        {
+          "Item1": "Services:Blazor-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:WPF-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RRS:Ip",
+          "Item2": "localhost"
+        }
+      ]
+    },
+    {
+      "Id": 30,
+      "VmUniqueName": "Vm1",
+      "Name": "RemoteInquiries",
+      "CsProj": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.RemoteInquiries.Runner\\Development\\_code\\Elisra.EsmServer.RemoteInquiries.Runner.Argos\\Elisra.EsmServer.RemoteInquiries.Runner.Argos.csproj",
+      "ApplicationFileName": "Elisra.EsmServer.RemoteInquiries.Runner.Argos.exe",
+      "ApplicationPath": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.RemoteInquiries.Runner\\Deployment\\~Debug\\Argos\\net6.0",
+      "ApplicationWorkingDirectory": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.RemoteInquiries.Runner\\Deployment\\~Debug\\Argos\\net6.0",
+      "RestApiPort": "5418",
+      "InstanceId": "",
+      "Arguments": "-caller_process_id 0 -caller_process_name Idle -tags argos;store_metrices_in_db;lab;wbr;tamar;local_object_storage;publishToOmByDds;;flow_tamar_tcp_1ef;flow_receiver_udp_unicast_1ef;",
+      "Variables": [
+        {
+          "Item1": "AttachDebuggerOnRun",
+          "Item2": "false"
+        },
+        {
+          "Item1": "Services:MyService:Name",
+          "Item2": "RemoteInquiries"
+        },
+        {
+          "Item1": "Services:MyService:RestApiPort",
+          "Item2": "5418"
+        },
+        {
+          "Item1": "Services:InfluxDb:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:RestApiPort",
+          "Item2": "5517"
+        },
+        {
+          "Item1": "Services:Extraction 2:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 2:RestApiPort",
+          "Item2": "5518"
+        },
+        {
+          "Item1": "Services:Extraction 3:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 3:RestApiPort",
+          "Item2": "5519"
+        },
+        {
+          "Item1": "Services:Extraction 4:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 4:RestApiPort",
+          "Item2": "5520"
+        },
+        {
+          "Item1": "Services:Connect:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Connect:RestApiPort",
+          "Item2": "5417"
+        },
+        {
+          "Item1": "Services:ResmManager:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:ResmManager:RestApiPort",
+          "Item2": "5419"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:RestApiPort",
+          "Item2": "5418"
+        },
+        {
+          "Item1": "Services:Blazor-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:WPF-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RRS:Ip",
+          "Item2": "localhost"
+        }
+      ]
+    },
+    {
+      "Id": 25,
+      "VmUniqueName": "Vm1",
+      "Name": "WPF-Monitor",
+      "CsProj": "..\\..\\..\\..\\.\\\\Elisra.EsmClient.ConnectAndInquiries.Base/Development/_code/Elisra.EsmServer.Monitor.App/Elisra.EsmServer.Monitor.App.csproj",
+      "ApplicationFileName": "Elisra.EsmServer.Monitor.App.exe",
+      "ApplicationPath": "..\\..\\..\\..\\.\\\\Elisra.EsmClient.ConnectAndInquiries.Base\\Deployment\\~Debug\\EsmServer.Monitor\\net6.0-windows",
+      "ApplicationWorkingDirectory": "..\\..\\..\\..\\.\\\\Elisra.EsmClient.ConnectAndInquiries.Base\\Deployment\\~Debug\\EsmServer.Monitor\\net6.0-windows",
+      "RestApiPort": "",
+      "InstanceId": "",
+      "Arguments": "-config ..\\..\\..\\..\\ -tags  -logger_config ..\\..\\..\\..\\ ",
+      "Variables": [
+        {
+          "Item1": "Services:MyService:Name",
+          "Item2": "WPF-Monitor"
+        },
+        {
+          "Item1": "Services:InfluxDb:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:RestApiPort",
+          "Item2": "5517"
+        },
+        {
+          "Item1": "Services:Extraction 2:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 2:RestApiPort",
+          "Item2": "5518"
+        },
+        {
+          "Item1": "Services:Extraction 3:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 3:RestApiPort",
+          "Item2": "5519"
+        },
+        {
+          "Item1": "Services:Extraction 4:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 4:RestApiPort",
+          "Item2": "5520"
+        },
+        {
+          "Item1": "Services:Connect:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Connect:RestApiPort",
+          "Item2": "5417"
+        },
+        {
+          "Item1": "Services:ResmManager:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:ResmManager:RestApiPort",
+          "Item2": "5419"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:RestApiPort",
+          "Item2": "5418"
+        },
+        {
+          "Item1": "Services:Blazor-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:WPF-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RRS:Ip",
+          "Item2": "localhost"
+        }
+      ]
+    },
+    {
+      "Id": 52,
+      "VmUniqueName": "Vm1",
+      "Name": "RRS",
+      "CsProj": "",
+      "ApplicationFileName": "RRS_v6.exe",
+      "ApplicationPath": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.RRS",
+      "ApplicationWorkingDirectory": "..\\..\\..\\..\\.\\\\Elisra.EsmServer.RRS",
+      "RestApiPort": "",
+      "InstanceId": "",
+      "Arguments": "",
+      "Variables": [
+        {
+          "Item1": "Services:MyService:Name",
+          "Item2": "RRS"
+        },
+        {
+          "Item1": "Services:InfluxDb:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 1:RestApiPort",
+          "Item2": "5517"
+        },
+        {
+          "Item1": "Services:Extraction 2:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 2:RestApiPort",
+          "Item2": "5518"
+        },
+        {
+          "Item1": "Services:Extraction 3:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 3:RestApiPort",
+          "Item2": "5519"
+        },
+        {
+          "Item1": "Services:Extraction 4:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Extraction 4:RestApiPort",
+          "Item2": "5520"
+        },
+        {
+          "Item1": "Services:Connect:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:Connect:RestApiPort",
+          "Item2": "5417"
+        },
+        {
+          "Item1": "Services:ResmManager:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:ResmManager:RestApiPort",
+          "Item2": "5419"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RemoteInquiries:RestApiPort",
+          "Item2": "5418"
+        },
+        {
+          "Item1": "Services:Blazor-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:WPF-Monitor:Ip",
+          "Item2": "localhost"
+        },
+        {
+          "Item1": "Services:RRS:Ip",
+          "Item2": "localhost"
+        }
+      ]
+    }
+  ]
+}

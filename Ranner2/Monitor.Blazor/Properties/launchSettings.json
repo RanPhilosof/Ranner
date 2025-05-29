@@ -1,0 +1,41 @@
+{
+  "profiles": {
+    "Monitor.Blazor": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5087"
+    },
+    //"https": {
+    //  "commandName": "Project",
+    //  //"commandLineArgs": "-m D:\\newGit\\Ultra.RESM\\_pipelines\\DeploymentSettings\\Resm_Argos_Target.json|D:\\newGit\\Ultra.RESM -g ArgosTarget -w Release -z Argos -b . -d 7000 -e vm_argos_1,localhost,4231;vm_argos_2,10.10.40.102,4231;",
+    //  //"commandLineArgs": "-m D:\\newGit\\Ultra.RESM\\_pipelines\\DeploymentSettings\\Resm_Argos_Target.json|d:\\git\\UltraRan -g ArgosTarget -w Release -z Argos -b Version-17 -d 7000 -e vm_argos_1,10.10.40.101,4231;vm_argos_2,10.10.40.102,4231;",
+    //  //"commandLineArgs": "-m D:\\temp\\MergeFiles\\Dolbayov1.json,D:\\temp\\MergeFiles\\Dolbayov2.json|d:\\git\\UltraRan -g ArgosLab1 -w Release -z Argos -b Version-17 -d 7000",
+    //  //"commandLineArgs": "-m D:\\temp\\MergeFiles\\Dolbayov1.json -g ArgosLab1 -w Release -z Argos -b Version-17 -d 7000",
+    //  "launchBrowser": true,
+    //  "environmentVariables": {
+    //    "ASPNETCORE_ENVIRONMENT": "Development"
+    //  },
+    //  "dotnetRunMessages": true,
+    //  "applicationUrl": "https://localhost:7177;http://localhost:5087"
+    //},
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  },
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:47333",
+      "sslPort": 44321
+    }
+  }
+}
