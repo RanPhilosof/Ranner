@@ -2,6 +2,7 @@ using AppMonitoring.SharedTypes;
 using CommandLine;
 using Monitor.Blazor.Interfaces;
 using Monitor.Blazor.Services;
+using Monitor.Infra;
 using Monitor.Services;
 using Monitor.SharedTypes;
 using MudBlazor.Services;
@@ -9,7 +10,7 @@ using Serilog;
 using System.Diagnostics;
 using System.Reflection;
 
-if (Environment.UserInteractive)
+if (!DebugerChecker.IsDebug && Environment.UserInteractive)
 {
 	WindowsServiceHandler.Stop("Monitor_Blazor");
     WindowsServiceHandler.Delete("Monitor_Blazor");

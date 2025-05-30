@@ -1,11 +1,12 @@
 using AppMonitoring.SharedTypes;
 using CommandLine;
 using Monitor.Agent.Services;
+using Monitor.Infra;
 using Monitor.SharedTypes;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-if (Environment.UserInteractive)
+if (!DebugerChecker.IsDebug && Environment.UserInteractive)
 {
     WindowsServiceHandler.Stop("Monitor_Agent");
     WindowsServiceHandler.Delete("Monitor_Agent");

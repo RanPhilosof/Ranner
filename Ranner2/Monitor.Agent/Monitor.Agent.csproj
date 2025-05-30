@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Monitor.Infra\Monitor.Infra.csproj" />
     <ProjectReference Include="..\Monitor.SharedTypes\Monitor.SharedTypes.csproj" />
   </ItemGroup>
 
