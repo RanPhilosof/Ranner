@@ -76,7 +76,7 @@ namespace Monitor.Blazor.Converters
 
             foreach (var instanceParams in uiInstanceData.Instances)
             {
-                var instanceParametersTree = new ParametersTree() { Name = instanceParams.Name, TypeName = srvTypeName };                
+                var instanceParametersTree = new ParametersTree() { Name = instanceParams.Name, TypeName = srvTypeName, Id = instanceParams.Id };                
 
                 foreach (var instanceParam in instanceParams.ExtraVariables)
                 {
@@ -108,6 +108,9 @@ namespace Monitor.Blazor.Converters
         {
             foreach (var param in node.Parameters.Values)
             {
+                if (!param.IsActive)
+                    continue;
+
                 param.ResolvedValue = ResolveValue(param.Value, node, root, param.DefaultValue);
             }
 
@@ -153,7 +156,7 @@ namespace Monitor.Blazor.Converters
             var node = current;
             while (node != null)
             {
-                if (node.TypeName == typeName && node.Parameters.TryGetValue(key, out var param))
+                if (node.TypeName == typeName && node.Parameters.TryGetValue(key, out var param) && param.IsActive)
                 {
                     return ResolveValue(param.Value, node, GetRoot(node), param.DefaultValue);
                 }
@@ -178,7 +181,7 @@ namespace Monitor.Blazor.Converters
                 vmNode = vmNode.Parent;
             }
 
-            if (vmNode != null && vmNode.Parameters.TryGetValue(key, out var param))
+            if (vmNode != null && vmNode.Parameters.TryGetValue(key, out var param) && param.IsActive)
             {
                 return ResolveValue(param.Value, vmNode, vmNode, param.DefaultValue); // recursive resolve
             }
@@ -195,7 +198,7 @@ namespace Monitor.Blazor.Converters
 
             if (vmNode.Childs.TryGetValue(serviceName, out var serviceNode) &&
                 serviceNode.TypeName == srvTypeName &&
-                serviceNode.Parameters.TryGetValue(key, out var param))
+                serviceNode.Parameters.TryGetValue(key, out var param) && param.IsActive)
             {
                 return ResolveValue(param.Value, serviceNode, serviceNode, param.DefaultValue); // recursive resolve
             }
@@ -220,7 +223,7 @@ namespace Monitor.Blazor.Converters
             var node = current;
             while (node != null)
             {
-                if (node.TypeName == typeName && node.Parameters.TryGetValue(key, out var param))
+                if (node.TypeName == typeName && node.Parameters.TryGetValue(key, out var param) && param.IsActive)
                 {
                     return param.DefaultValue;
                 }
@@ -237,7 +240,7 @@ namespace Monitor.Blazor.Converters
                 node = node.Parent;
             }
 
-            if (node != null && node.Parameters.TryGetValue(key, out var param))
+            if (node != null && node.Parameters.TryGetValue(key, out var param) && param.IsActive)
             {
                 return param.DefaultValue;
             }
@@ -253,12 +256,96 @@ namespace Monitor.Blazor.Converters
 
             if (vmNode.Childs.TryGetValue(serviceName, out var serviceNode) &&
                 serviceNode.TypeName == srvTypeName &&
-                serviceNode.Parameters.TryGetValue(key, out var param))
+                serviceNode.Parameters.TryGetValue(key, out var param) && param.IsActive)
             {
                 return param.DefaultValue;
             }
 
             return null;
         }
-    }
+
+		public static Dictionary<ServiceIdentifier, List<(string SourcePath, string Key, string ResolvedValue)>> BuildResolvedMapPerService(ParametersTree root)
+		{
+			var result = new Dictionary<ServiceIdentifier, List<(string SourcePath, string Key, string ResolvedValue)>>();
+
+			var globalNode = root.Childs.GetValueOrDefault(ParametersTreeInitiator.globalTypeName);
+			if (globalNode == null)
+				return result;
+
+			foreach (var vmNode in globalNode.Childs.Values.Where(c => c.TypeName == ParametersTreeInitiator.vmTypeName))
+			{
+				foreach (var srvNode in vmNode.Childs.Values.Where(c => c.TypeName == ParametersTreeInitiator.srvTypeName))
+				{
+					var list = new List<(string SourcePath, string Key, string ResolvedValue)>();
+
+					var allKeys = new HashSet<string>();
+					allKeys.UnionWith(globalNode.Parameters.Keys);
+					allKeys.UnionWith(vmNode.Parameters.Keys);
+					allKeys.UnionWith(srvNode.Parameters.Keys);
+
+					foreach (var key in allKeys)
+					{
+						bool fromGlb = globalNode.Parameters.TryGetValue(key, out var glbParam) && glbParam.IsActive;
+						bool fromVm = vmNode.Parameters.TryGetValue(key, out var vmParam) && vmParam.IsActive;
+						bool fromSrv = srvNode.Parameters.TryGetValue(key, out var srvParam) && srvParam.IsActive;
+
+						string resolved = null;
+						string sourcePath;
+
+						if (fromSrv)
+						{
+							resolved = srvParam.ResolvedValue;
+							sourcePath = "glb vm [srv]";
+						}
+						else if (fromVm)
+						{
+							resolved = vmParam.ResolvedValue;
+							sourcePath = "glb [vm] srv";
+						}
+						else if (fromGlb)
+						{
+							resolved = glbParam.ResolvedValue;
+							sourcePath = "[glb] vm srv";
+						}
+						else
+						{
+							continue;
+						}
+
+						list.Add((sourcePath, key, resolved));
+					}
+
+					// Create a clean object key
+					var identifier = new ServiceIdentifier(srvNode.Id, srvNode.Name);
+					result[identifier] = list;
+				}
+			}
+
+			return result;
+		}
+	}
+
+	public class ServiceIdentifier
+	{
+		public int Id { get; }
+		public string Name { get; }
+
+		public string FullKey => $"[{Id}] {Name}";
+
+		public ServiceIdentifier(int id, string name)
+		{
+			Id = id;
+			Name = name;
+		}
+
+		public override bool Equals(object obj)
+		{
+			return obj is ServiceIdentifier other && Id == other.Id;
+		}
+
+		public override int GetHashCode()
+		{
+			return Id.GetHashCode();
+		}
+	}
 }

@@ -113,6 +113,7 @@ namespace Monitor.Infra
 	{
 		public string Name;
         public string TypeName;
+		public int Id;
 
         public ParametersTree Parent;
 		public Dictionary<string, ParametersTree> Childs = new Dictionary<string, ParametersTree>();        
@@ -126,7 +127,7 @@ namespace Monitor.Infra
         public string Value { get; set; }
         public string DefaultValue { get; set; }
         public string Description { get; set; }
-        public string ResolvedValue { get; set; }
+		public string ResolvedValue { get; set; } = null;
 
         public Parameters Clone()
 		{

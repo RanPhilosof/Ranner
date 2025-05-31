@@ -6,8 +6,9 @@ using System.Collections;
 public class EnviromentVariablesResolverTests2
 {
     private readonly ParametersTree _tree;
+    private readonly Dictionary<ServiceIdentifier, List<(string SourcePath, string Key, string ResolvedValue)>> _mapService;
 
-    [Theory]
+	[Theory]
     [InlineData(new[] { "EnvironmentVariables" }, "Services:Rabbit:Ip", "127.0.0.1")]
     [InlineData(new[] { "EnvironmentVariables" }, "Services:Rabbit:Port", "1000")]
     [InlineData(new[] { "EnvironmentVariables" }, "Services:Rabbit:Address", "127.0.0.1:1000")]
@@ -34,7 +35,10 @@ public class EnviromentVariablesResolverTests2
 
     [InlineData(new[] { "EnvironmentVariables", "GlobalParameters" }, "MixGrabbitIp10", "127.0.0.1 127.0.0.2")]
 
-    [InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm1" }, "vm1_k1", "vm1_v1")]
+	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters" }, "CheckActive_RabbitIp1", null)]
+	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters" }, "CheckActive_RabbitIp2", null)]
+
+	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm1" }, "vm1_k1", "vm1_v1")]
     [InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm1" }, "vm1_k2", "vm1_v2 vm1_v1")]
     [InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm1" }, "vm1_k3", "vm1_v3 127.0.0.2")]
     [InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm1" }, "vm1_k4", "vm1_v4 1000")]
@@ -105,7 +109,19 @@ public class EnviromentVariablesResolverTests2
         Assert.Equal(expected, current.Parameters[key].ResolvedValue);
     }
 
-    public EnviromentVariablesResolverTests2()
+	[Theory]
+	[InlineData(20, "Ser1", "MinioIp1", "255.255.255.251")]
+	[InlineData(20, "Ser1", "MinioIp2", "255.255.255.252")]
+	[InlineData(20, "Ser1", "MinioIp3", "255.255.255.253")]
+	[InlineData(20, "Ser1", "MinioIp4", "255.255.255.254")]
+	public void Show_Final_Variables(int id, string service, string key, string expected)
+	{
+        var si = new ServiceIdentifier(id, service);
+        var res = _mapService[si].Where(x => x.Key == key).FirstOrDefault();
+		Assert.Equal(expected, res.ResolvedValue);
+	}
+
+	public EnviromentVariablesResolverTests2()
     {
         foreach (DictionaryEntry envVar in Environment.GetEnvironmentVariables())
         {
@@ -152,7 +168,13 @@ public class EnviromentVariablesResolverTests2
                         new Montior.Blazor.Data.KeyValueComplex() { Active = true, Key = "GrabbitIp6", Value = "{glb[RabbitIp2]}:{glb[RabbitIp2]},{glb[RabbitIp3]}:{glb[RabbitIp3]}", DefaultValue = "0.0.0.5", Description = "" },
 
                         new Montior.Blazor.Data.KeyValueComplex() { Active = true, Key = "MixGrabbitIp10", Value = "{env[Services:Rabbit:Ip]} {glb[GrabbitIp1]}", DefaultValue = "0.0.0.2", Description = "" },
-                    },
+
+						new Montior.Blazor.Data.KeyValueComplex() { Active = false, Key = "CheckActive_RabbitIp1", Value = "{env[Services:Rabbit2:Ip]}", DefaultValue = "0.0.0.0", Description = "" },
+						new Montior.Blazor.Data.KeyValueComplex() { Active = false, Key = "CheckActive_RabbitIp2", Value = "{glb[CheckActive_RabbitIp1]}", DefaultValue = "0.0.0.1", Description = "" },
+
+						new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "MinioIp2", Value = "255.255.255.0", DefaultValue = "0"},
+						new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "MinioIp3", Value = "255.255.255.253", DefaultValue = "0"},
+					},
             },
             new Montior.Blazor.Data.UI_VmsData()
             {
@@ -163,33 +185,34 @@ public class EnviromentVariablesResolverTests2
                             UniqueName = "vm1",
                             ExtraVariables = new List<Montior.Blazor.Data.KeyValueComplex>()
                             {
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k1", Value = "vm1_v1" },
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k2", Value = "vm1_v2 {vm[vm1_k1]}" },
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k3", Value = "vm1_v3 {glb[RabbitIp1]}" },
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k4", Value = "vm1_v4 {env[Services:Rabbit:Port]}" },
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k5", Value = "vm1_v5 {env[Ran]}", DefaultValue = null},
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k6", Value = "vm1_v6 {glb[Ran]}", DefaultValue = null},
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k7", Value = "vm1_v7 {vm[Ran]}", DefaultValue = null},
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k8", Value = "vm1_v8 {env[Ran]}", DefaultValue = "vm1_v8_def"},
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k9", Value = "vm1_v9 {glb[Ran]}", DefaultValue = "vm1_v9_def"},
-                                new Montior.Blazor.Data.KeyValueComplex() { Key = "vm1_k10", Value = "vm1_v10 {vm[Ran]}", DefaultValue = "vm1_v10_def"},
-                            }
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k1", Value = "vm1_v1" },
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k2", Value = "vm1_v2 {vm[vm1_k1]}" },
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k3", Value = "vm1_v3 {glb[RabbitIp1]}" },
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k4", Value = "vm1_v4 {env[Services:Rabbit:Port]}" },
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k5", Value = "vm1_v5 {env[Ran]}", DefaultValue = null},
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k6", Value = "vm1_v6 {glb[Ran]}", DefaultValue = null},
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k7", Value = "vm1_v7 {vm[Ran]}", DefaultValue = null},
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k8", Value = "vm1_v8 {env[Ran]}", DefaultValue = "vm1_v8_def"},
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k9", Value = "vm1_v9 {glb[Ran]}", DefaultValue = "vm1_v9_def"},
+                                new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm1_k10", Value = "vm1_v10 {vm[Ran]}", DefaultValue = "vm1_v10_def"},
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "MinioIp4", Value = "255.255.255.254", DefaultValue = "0"},
+							}
                         },
                         new Montior.Blazor.Data.UI_VmData()
                         {
                             UniqueName = "vm2",
                             ExtraVariables = new List<Montior.Blazor.Data.KeyValueComplex>()
                             {
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k1", Value = "vm2_v1" },
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k2", Value = "vm2_v2 {vm[vm2_k1]}" },
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k3", Value = "vm2_v3 {glb[RabbitIp1]}" },
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k4", Value = "vm2_v4 {env[Services:Rabbit:Port]}" },
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k5", Value = "vm2_v5 {env[Ran]}", DefaultValue = null},
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k6", Value = "vm2_v6 {glb[Ran]}", DefaultValue = null},
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k7", Value = "vm2_v7 {vm[Ran]}", DefaultValue = null},
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k8", Value = "vm2_v8 {env[Ran]}", DefaultValue = "vm2_v8_def"},
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k9", Value = "vm2_v9 {glb[Ran]}", DefaultValue = "vm2_v9_def"},
-								new Montior.Blazor.Data.KeyValueComplex() { Key = "vm2_k10", Value = "vm2_v10 {vm[Ran]}", DefaultValue = "vm2_v10_def"},
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k1", Value = "vm2_v1" },
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k2", Value = "vm2_v2 {vm[vm2_k1]}" },
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k3", Value = "vm2_v3 {glb[RabbitIp1]}" },
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k4", Value = "vm2_v4 {env[Services:Rabbit:Port]}" },
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k5", Value = "vm2_v5 {env[Ran]}", DefaultValue = null},
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k6", Value = "vm2_v6 {glb[Ran]}", DefaultValue = null},
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k7", Value = "vm2_v7 {vm[Ran]}", DefaultValue = null},
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k8", Value = "vm2_v8 {env[Ran]}", DefaultValue = "vm2_v8_def"},
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k9", Value = "vm2_v9 {glb[Ran]}", DefaultValue = "vm2_v9_def"},
+								new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "vm2_k10", Value = "vm2_v10 {vm[Ran]}", DefaultValue = "vm2_v10_def"},
 							}
                         }
                     }
@@ -203,22 +226,25 @@ public class EnviromentVariablesResolverTests2
                                 {
                                     Name = "Ser1",
                                     VmUniqueName = "vm1",
+                                    Id = 20,
                                     ExtraVariables = new List<KeyValueComplex>()
                                     {
-									    new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k1", Value = "Ser1_v1" },
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k2", Value = "Ser1_v2 {vm[vm1_k1]}", DefaultValue = "def" },
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k3", Value = "Ser1_v3 {vm[vm2_k1]}", DefaultValue = "cannot_reach_vm2" },
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k4", Value = "Ser1_v4 {glb[RabbitIp1]}" },
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k5", Value = "Ser1_v5 {env[Services:Rabbit:Port]}" },
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k6", Value = "Ser1_v6 {env[Ran]}", DefaultValue = null},
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k7", Value = "Ser1_v7 {glb[Ran]}", DefaultValue = null},
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k8", Value = "Ser1_v8 {vm[Ran]}", DefaultValue = null},
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k9", Value = "Ser1_v9 {env[Ran]}", DefaultValue = "Ser1_v9_def"},
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k10", Value = "Ser1_v10 {glb[Ran]}", DefaultValue = "Ser1_v10_def"},
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k11", Value = "Ser1_v11 {vm[Ran]}", DefaultValue = "Ser1_v11_def"},
-								        new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k12", Value = "Ser1_v12 {srv[Ser1(Ser1_k1)]}", DefaultValue = "Ser1_v12_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k13", Value = "Ser1_v12 {srv[Ser1_k01]}", DefaultValue = "Ser1_v13_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_k14", Value = "Ser1_v14 {srv[Ser2(Ser2_k1)]}", DefaultValue = "Ser2_v12_def"},
+									    new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k1", Value = "Ser1_v1" },
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k2", Value = "Ser1_v2 {vm[vm1_k1]}", DefaultValue = "def" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k3", Value = "Ser1_v3 {vm[vm2_k1]}", DefaultValue = "cannot_reach_vm2" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k4", Value = "Ser1_v4 {glb[RabbitIp1]}" },
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k5", Value = "Ser1_v5 {env[Services:Rabbit:Port]}" },
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k6", Value = "Ser1_v6 {env[Ran]}", DefaultValue = null},
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k7", Value = "Ser1_v7 {glb[Ran]}", DefaultValue = null},
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k8", Value = "Ser1_v8 {vm[Ran]}", DefaultValue = null},
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k9", Value = "Ser1_v9 {env[Ran]}", DefaultValue = "Ser1_v9_def"},
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k10", Value = "Ser1_v10 {glb[Ran]}", DefaultValue = "Ser1_v10_def"},
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k11", Value = "Ser1_v11 {vm[Ran]}", DefaultValue = "Ser1_v11_def"},
+								        new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k12", Value = "Ser1_v12 {srv[Ser1(Ser1_k1)]}", DefaultValue = "Ser1_v12_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k13", Value = "Ser1_v12 {srv[Ser1_k01]}", DefaultValue = "Ser1_v13_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_k14", Value = "Ser1_v14 {srv[Ser2(Ser2_k1)]}", DefaultValue = "Ser2_v12_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "MinioIp1", Value = "255.255.255.251", DefaultValue = "0"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "MinioIp2", Value = "255.255.255.252", DefaultValue = "0"},
 									}
                                 }
                             },
@@ -227,22 +253,23 @@ public class EnviromentVariablesResolverTests2
                                 {
                                     Name = "Ser2",
                                     VmUniqueName = "vm1",
-                                    ExtraVariables = new List<KeyValueComplex>()
+									Id = 21,
+									ExtraVariables = new List<KeyValueComplex>()
                                     {
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k1",  Value = "Ser2_v1" },
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k2",  Value = "Ser2_v2 {vm[vm1_k1]}", DefaultValue = "def" },
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k3",  Value = "Ser2_v3 {vm[vm2_k1]}", DefaultValue = "cannot_reach_vm2" },
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k4",  Value = "Ser2_v4 {glb[RabbitIp1]}" },
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k5",  Value = "Ser2_v5 {env[Services:Rabbit:Port]}" },
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k6",  Value = "Ser2_v6 {env[Ran]}", DefaultValue = null},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k7",  Value = "Ser2_v7 {glb[Ran]}", DefaultValue = null},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k8",  Value = "Ser2_v8 {vm[Ran]}", DefaultValue = null},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k9",  Value = "Ser2_v9 {env[Ran]}", DefaultValue = "Ser2_v9_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k10", Value = "Ser2_v10 {glb[Ran]}", DefaultValue = "Ser2_v10_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k11", Value = "Ser2_v11 {vm[Ran]}", DefaultValue = "Ser2_v11_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k12", Value = "Ser2_v12 {srv[Ser2(Ser2_k1)]}", DefaultValue = "Ser2_v12_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k13", Value = "Ser2_v12 {srv[Ser2_k01]}", DefaultValue = "Ser2_v13_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser2_k14", Value = "Ser2_v14 {srv[Ser1(Ser1_k1)]}", DefaultValue = "Ser2_v12_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k1",  Value = "Ser2_v1" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k2",  Value = "Ser2_v2 {vm[vm1_k1]}", DefaultValue = "def" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k3",  Value = "Ser2_v3 {vm[vm2_k1]}", DefaultValue = "cannot_reach_vm2" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k4",  Value = "Ser2_v4 {glb[RabbitIp1]}" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k5",  Value = "Ser2_v5 {env[Services:Rabbit:Port]}" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k6",  Value = "Ser2_v6 {env[Ran]}", DefaultValue = null},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k7",  Value = "Ser2_v7 {glb[Ran]}", DefaultValue = null},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k8",  Value = "Ser2_v8 {vm[Ran]}", DefaultValue = null},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k9",  Value = "Ser2_v9 {env[Ran]}", DefaultValue = "Ser2_v9_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k10", Value = "Ser2_v10 {glb[Ran]}", DefaultValue = "Ser2_v10_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k11", Value = "Ser2_v11 {vm[Ran]}", DefaultValue = "Ser2_v11_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k12", Value = "Ser2_v12 {srv[Ser2(Ser2_k1)]}", DefaultValue = "Ser2_v12_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k13", Value = "Ser2_v12 {srv[Ser2_k01]}", DefaultValue = "Ser2_v13_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser2_k14", Value = "Ser2_v14 {srv[Ser1(Ser1_k1)]}", DefaultValue = "Ser2_v12_def"},
 									}
                                 }
                             },
@@ -250,13 +277,14 @@ public class EnviromentVariablesResolverTests2
 								new UI_Instance()
 								{
 									Name = "Ser1",
+									Id = 22,
 									VmUniqueName = "vm2",
 									ExtraVariables = new List<KeyValueComplex>()
 									{
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_vm2_k1",  Value = "Ser1_vm2_v1" },
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_vm2_k2", Value = "Ser1_vm2_v12 {srv[Ser1(Ser1_vm2_k1)]}", DefaultValue = "Ser1_vm2_v12_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_vm2_k3", Value = "Ser1_vm2_v12 {srv[Ser2_k01]}", DefaultValue = "Ser1_vm2_v13_def"},
-										new Montior.Blazor.Data.KeyValueComplex() { Key = "Ser1_vm2_k4", Value = "Ser1_vm2_v14 {srv[Ser1(Ser1_k1)]}", DefaultValue = "Ser1_vm2_v12_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k1",  Value = "Ser1_vm2_v1" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k2", Value = "Ser1_vm2_v12 {srv[Ser1(Ser1_vm2_k1)]}", DefaultValue = "Ser1_vm2_v12_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k3", Value = "Ser1_vm2_v12 {srv[Ser2_k01]}", DefaultValue = "Ser1_vm2_v13_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k4", Value = "Ser1_vm2_v14 {srv[Ser1(Ser1_k1)]}", DefaultValue = "Ser1_vm2_v12_def"},
 									}
 								}
 							},
@@ -265,5 +293,8 @@ public class EnviromentVariablesResolverTests2
         #endregion Init
 
         ParametersTreeInitiator.ResolveAllParameters(_tree);
-    } 
+
+        _mapService = ParametersTreeInitiator.BuildResolvedMapPerService(_tree);
+
+	} 
 }
