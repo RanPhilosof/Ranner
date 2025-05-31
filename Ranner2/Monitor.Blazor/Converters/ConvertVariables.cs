@@ -60,14 +60,14 @@ namespace Monitor.Blazor.Converters
                 foreach (var vmParam in vmParams.ExtraVariables)
                 {
                     vmParametersTree.Parameters.Add(vmParam.Key,
-                            new Parameters()
-                            {
-                                IsActive =  true,
-                                Key = vmParam.Key,
-                                Value = vmParam.Value,
-                                DefaultValue = "",
-                                Description = "",
-                            });
+					    new Parameters()
+					    {
+					    	IsActive = vmParam.Active,
+					    	Key = vmParam.Key,
+					    	Value = vmParam.Value,
+					    	DefaultValue = vmParam.DefaultValue,
+					    	Description = vmParam.Description
+					    });
 
                 }
                 
@@ -83,11 +83,11 @@ namespace Monitor.Blazor.Converters
                     instanceParametersTree.Parameters.Add(instanceParam.Key,
                             new Parameters()
                             {
-                                IsActive = true,
+                                IsActive = instanceParam.Active,
                                 Key = instanceParam.Key,
                                 Value = instanceParam.Value,
-                                DefaultValue = "",
-                                Description = "",
+                                DefaultValue = instanceParam.DefaultValue,
+                                Description = instanceParam.Description,
                             });
 
                 }
@@ -108,7 +108,7 @@ namespace Monitor.Blazor.Converters
         {
             foreach (var param in node.Parameters.Values)
             {
-                param.ResolvedValue = ResolveValue(param.Value, node, root);
+                param.ResolvedValue = ResolveValue(param.Value, node, root, param.DefaultValue);
             }
 
             foreach (var child in node.Childs.Values)
@@ -117,10 +117,12 @@ namespace Monitor.Blazor.Converters
             }
         }
 
-        private static string ResolveValue(string value, ParametersTree currentNode, ParametersTree root)
+        private static string ResolveValue(string value, ParametersTree currentNode, ParametersTree root, string defaultValue)
         {
             string pattern = @"\{(env|glb|vm|srv)\[([^\[\]()]+)(?:\(([^)]+)\))?\]\}";
-            return Regex.Replace(value, pattern, match =>
+            bool failed = false;
+
+            string result = Regex.Replace(value, pattern, match =>
             {
                 string type = match.Groups[1].Value;
                 string varOrService = match.Groups[2].Value;
@@ -132,11 +134,18 @@ namespace Monitor.Blazor.Converters
                     "glb" => ResolveFromType(globalTypeName, varOrService, currentNode),
                     "vm" => ResolveFromVm(varOrService, currentNode),
                     "srv" => ResolveFromService(varOrService, nestedVar, currentNode),
-                    _ => match.Value
+                    _ => null
                 };
 
-                return resolved ?? match.Value;
+                if (resolved == null)
+                {
+                    failed = true;
+                }
+
+                return resolved ?? ""; // placeholder ignored if failed
             });
+
+            return failed ? defaultValue : result;
         }
 
         private static string ResolveFromType(string typeName, string key, ParametersTree current)
@@ -146,7 +155,7 @@ namespace Monitor.Blazor.Converters
             {
                 if (node.TypeName == typeName && node.Parameters.TryGetValue(key, out var param))
                 {
-                    return ResolveValue(param.Value, node, GetRoot(node)); // ✅ pass correct root
+                    return ResolveValue(param.Value, node, GetRoot(node), param.DefaultValue);
                 }
                 node = node.Parent;
             }
@@ -171,7 +180,7 @@ namespace Monitor.Blazor.Converters
 
             if (vmNode != null && vmNode.Parameters.TryGetValue(key, out var param))
             {
-                return ResolveValue(param.Value, vmNode, vmNode); // recursive resolve
+                return ResolveValue(param.Value, vmNode, vmNode, param.DefaultValue); // recursive resolve
             }
 
             return null;
@@ -188,7 +197,65 @@ namespace Monitor.Blazor.Converters
                 serviceNode.TypeName == srvTypeName &&
                 serviceNode.Parameters.TryGetValue(key, out var param))
             {
-                return ResolveValue(param.Value, serviceNode, serviceNode); // recursive resolve
+                return ResolveValue(param.Value, serviceNode, serviceNode, param.DefaultValue); // recursive resolve
+            }
+
+            return null;
+        }
+
+        private static string GetDefaultValueForMatch(string type, string key, string nestedKey, ParametersTree current)
+        {
+            return type switch
+            {
+                "env" => GetDefault(envTypeName, key, current),
+                "glb" => GetDefault(globalTypeName, key, current),
+                "vm" => GetVmDefault(key, current),
+                "srv" => GetSrvDefault(key, nestedKey, current),
+                _ => null
+            };
+        }
+
+        private static string GetDefault(string typeName, string key, ParametersTree current)
+        {
+            var node = current;
+            while (node != null)
+            {
+                if (node.TypeName == typeName && node.Parameters.TryGetValue(key, out var param))
+                {
+                    return param.DefaultValue;
+                }
+                node = node.Parent;
+            }
+            return null;
+        }
+
+        private static string GetVmDefault(string key, ParametersTree current)
+        {
+            var node = current;
+            while (node != null && node.TypeName != vmTypeName)
+            {
+                node = node.Parent;
+            }
+
+            if (node != null && node.Parameters.TryGetValue(key, out var param))
+            {
+                return param.DefaultValue;
+            }
+
+            return null;
+        }
+
+        private static string GetSrvDefault(string serviceName, string key, ParametersTree current)
+        {
+            if (current.TypeName != srvTypeName) return null;
+            var vmNode = current.Parent;
+            if (vmNode == null || vmNode.TypeName != vmTypeName) return null;
+
+            if (vmNode.Childs.TryGetValue(serviceName, out var serviceNode) &&
+                serviceNode.TypeName == srvTypeName &&
+                serviceNode.Parameters.TryGetValue(key, out var param))
+            {
+                return param.DefaultValue;
             }
 
             return null;

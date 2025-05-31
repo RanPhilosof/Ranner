@@ -357,7 +357,7 @@
 								</MudTable>
 							</MudCardContent>
 						</MudCard>
-						<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.AddCircle" Disabled="@envVarDisable"  Color="Color.Success" OnClick="@(() => { @context.ExtraVariables.Add(new KeyValue() { Key = "key", Value = "value" }); })" />
+						<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.AddCircle" Disabled="@envVarDisable"  Color="Color.Success" OnClick="@(() => { @context.ExtraVariables.Add(new KeyValueComplex() { Key = "key", Value = "value" }); })" />
 					</td>
 				</MudTr>
 			}
@@ -514,7 +514,7 @@
 		StateHasChanged();
 	}
 	
-	private void RemoveEnvVarItem(int id, KeyValue keyVal)
+	private void RemoveEnvVarItem(int id, KeyValueComplex keyVal)
 	{
 		var inst = instancesData.Instances.FirstOrDefault(x => x.Id == id);
 		if (inst != null)

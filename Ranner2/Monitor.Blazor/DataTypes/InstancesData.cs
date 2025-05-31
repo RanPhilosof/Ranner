@@ -101,7 +101,7 @@ public class UI_Instance
 	public string TagsStr { get; set; } = string.Empty;
 
 	public bool ShowExtraEnvironmentVariables { get; set; }
-    public List<KeyValue> ExtraVariables { get; set; } = new List<KeyValue>();
+    public List<KeyValueComplex> ExtraVariables { get; set; } = new List<KeyValueComplex>();
 
 	public bool Disabled { get; set; }
 	public bool DisabledByGroups { get; set; }
@@ -167,15 +167,21 @@ public class UI_Instance
 		if (ExtraVariables.Count != other.ExtraVariables.Count)
 			return false;
 
-		for (int i = 0; i <ExtraVariables.Count; i++)
-		{
-			if (ExtraVariables[i].Key != other.ExtraVariables[i].Key)
-				return false;
-			if (ExtraVariables[i].Value != other.ExtraVariables[i].Value)
-				return false;
-		}
+        for (int i = 0; i < ExtraVariables.Count; i++)
+        {
+            if (ExtraVariables[i].Active != other.ExtraVariables[i].Active)
+                return false;
+            if (ExtraVariables[i].DefaultValue != other.ExtraVariables[i].DefaultValue)
+                return false;
+            if (ExtraVariables[i].Description != other.ExtraVariables[i].Description)
+                return false;
+            if (ExtraVariables[i].Key != other.ExtraVariables[i].Key)
+                return false;
+            if (ExtraVariables[i].Value != other.ExtraVariables[i].Value)
+                return false;
+        }
 
-		if (Disabled != other.Disabled)
+        if (Disabled != other.Disabled)
 			return false;
 
 		if (DisabledByGroups != other.DisabledByGroups)

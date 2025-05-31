@@ -352,7 +352,7 @@ namespace Monitor.Blazor.Services
                 }
 
                 foreach (var kvp in vmDataVars)
-                    vmData.ExtraVariables.Add(new KeyValue() { Key = kvp.Key, Value = kvp.Value });
+                    vmData.ExtraVariables.Add(new KeyValueComplex() { Key = kvp.Key, Value = kvp.Value });
 
                 var vmDataCompilers = new Dictionary<string, string>();
 

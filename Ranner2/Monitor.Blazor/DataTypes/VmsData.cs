@@ -91,7 +91,7 @@ public class UI_VmData
 	public List<UI_VmCompiler> Compilers { get; set; } = new List<UI_VmCompiler>();
 
 	public bool ShowExtraEnviromentsVariables { get; set; }
-	public List<KeyValue> ExtraVariables { get; set; } = new List<KeyValue>();
+	public List<KeyValueComplex> ExtraVariables { get; set; } = new List<KeyValueComplex>();
 
 	public bool ShowVmActualEnviromentVariables { get; set; }
 	[Newtonsoft.Json.JsonIgnore]
@@ -120,6 +120,12 @@ public class UI_VmData
 		
 		for (int i=0; i<ExtraVariables.Count; i++)
 		{
+			if (ExtraVariables[i].Active != other.ExtraVariables[i].Active)
+				return false;
+			if (ExtraVariables[i].DefaultValue != other.ExtraVariables[i].DefaultValue)
+				return false;
+			if (ExtraVariables[i].Description != other.ExtraVariables[i].Description)
+				return false;
 			if (ExtraVariables[i].Key != other.ExtraVariables[i].Key)
 				return false;
 			if (ExtraVariables[i].Value != other.ExtraVariables[i].Value)
