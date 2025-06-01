@@ -59,7 +59,9 @@
 									<MudTd/>
 									<MudTd DataLabel="Active">@groupContext.IsActive</MudTd>
 									<MudTd DataLabel="Tag">@groupContext.Value</MudTd>
-									<MudIconButton Disabled="@tagsDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveGroupTagItem(context, groupContext))"></MudIconButton>
+									<MudTd>
+										<MudIconButton Disabled="@tagsDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveGroupTagItem(context, groupContext))"></MudIconButton>
+									</MudTd>
 								</RowTemplate>
 								<RowEditingTemplate>
 									<MudTd/>

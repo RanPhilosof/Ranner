@@ -79,7 +79,7 @@ namespace Monitor.Blazor.Converters
                 if (instanceParams.Disabled || instanceParams.DisabledByGroups)
                     continue;
 
-                var instanceParametersTree = new ParametersTree() { Name = instanceParams.Name, TypeName = srvTypeName, Id = instanceParams.Id };                
+                var instanceParametersTree = new ParametersTree() { Name = instanceParams.Name, TypeName = srvTypeName, Id = instanceParams.Id, SessionName = instanceParams.SessionName };                
 
                 foreach (var instanceParam in instanceParams.ExtraVariables)
                 {
@@ -103,6 +103,9 @@ namespace Monitor.Blazor.Converters
 
 				foreach (var instance in uiInstanceData.Instances)
 				{
+                    if (instance.SessionName != instanceParams.SessionName)
+                        continue;
+
 					if (!string.IsNullOrEmpty(instance.Name))
 						instanceParametersTree.Parameters.Add($"Services:{instance.Name}:Ip", new Parameters() { 
                             IsActive = true, 
@@ -213,22 +216,67 @@ namespace Monitor.Blazor.Converters
             return null;
         }
 
-        private static string ResolveFromService(string serviceName, string key, ParametersTree current)
-        {
-            if (current.TypeName != srvTypeName) return null;
+		private static string ResolveFromService(string serviceName, string key, ParametersTree current)
+		{
+			if (current.TypeName != srvTypeName)
+				return null;
+        
+			// Get session name from current service node
+			var sessionName = current.SessionName;
+			if (string.IsNullOrEmpty(sessionName))
+				return null;
+        
+			// Navigate up to the root
+			var root = GetRoot(current);
+        
+			// Traverse to global node
+			if (!root.Childs.TryGetValue(globalTypeName, out var globalNode))
+				return null;
+        
+			// Collect all service nodes in the same session
+			var allServiceNodesInSameSession = new List<ParametersTree>();
+        
+			foreach (var vmNode in globalNode.Childs.Values.Where(n => n.TypeName == vmTypeName))
+			{
+				foreach (var serviceNode in vmNode.Childs.Values.Where(n => n.TypeName == srvTypeName))
+				{
+					if (serviceNode.SessionName == sessionName)
+					{
+						allServiceNodesInSameSession.Add(serviceNode);
+					}
+				}
+			}
+        
+			// Find the target service node with the given name in the same session
+			var targetServiceNode = allServiceNodesInSameSession
+				.FirstOrDefault(n => n.Name == serviceName);
+        
+			if (targetServiceNode != null &&
+				targetServiceNode.Parameters.TryGetValue(key, out var param) &&
+				param.IsActive)
+			{
+				return ResolveValue(param.Value, targetServiceNode, root, param.DefaultValue);
+			}
+        
+			return null;
+		}
 
-            var vmNode = current.Parent;
-            if (vmNode == null || vmNode.TypeName != vmTypeName) return null;
-
-            if (vmNode.Childs.TryGetValue(serviceName, out var serviceNode) &&
-                serviceNode.TypeName == srvTypeName &&
-                serviceNode.Parameters.TryGetValue(key, out var param) && param.IsActive)
-            {
-                return ResolveValue(param.Value, serviceNode, serviceNode, param.DefaultValue); // recursive resolve
-            }
-
-            return null;
-        }
+		//private static string ResolveFromService(string serviceName, string key, ParametersTree current)
+        //{
+        //    if (current.TypeName != srvTypeName) return null;
+        //
+        //    var vmNode = current.Parent;
+        //    if (vmNode == null || vmNode.TypeName != vmTypeName) return null;
+        //
+        //    if (vmNode.Childs.TryGetValue(serviceName, out var serviceNode) &&
+        //        serviceNode.TypeName == srvTypeName &&
+        //        serviceNode.Parameters.TryGetValue(key, out var param) && param.IsActive)
+        //    {
+        //        return ResolveValue(param.Value, serviceNode, serviceNode, param.DefaultValue); // recursive resolve
+        //    }
+        //
+        //    return null;
+        //}
 
         private static string GetDefaultValueForMatch(string type, string key, string nestedKey, ParametersTree current)
         {

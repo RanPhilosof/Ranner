@@ -465,6 +465,8 @@
 				{
 					var inf = infos[vmData.UniqueName];
 					vmData.ActualVariables = inf.Item1.Variables.Select(x => new KeyValue() { Key = x.Item1, Value = x.Item2}).ToList();
+					vmData.LastUpdateTime = new TimeInfo();
+					vmData.LastUpdateTime.Time = DateTime.Now;
 				}
 			}
 		}

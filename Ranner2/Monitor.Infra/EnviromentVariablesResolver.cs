@@ -113,6 +113,7 @@ namespace Monitor.Infra
 	{
 		public string Name;
         public string TypeName;
+		public string SessionName;
 		public int Id;
 
         public ParametersTree Parent;

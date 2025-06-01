@@ -851,8 +851,12 @@ namespace Monitor.Blazor.Services
                     {
                         foreach (var agentObject in monitorAgentObjects)
                         {
-							agentObject.Value.Item2.VmInstanceSettings.GuidString = lastGuidString;
-							SetMonitorAgentSettingsHandler?.Invoke(agentObject.Value.Item1, agentObject.Value.Item2);
+                            try
+                            {
+                                agentObject.Value.Item2.VmInstanceSettings.GuidString = lastGuidString;
+                                SetMonitorAgentSettingsHandler?.Invoke(agentObject.Value.Item1, agentObject.Value.Item2);
+                            }
+                            catch { }
                         }
                     });
 

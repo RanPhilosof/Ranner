@@ -115,7 +115,8 @@ public class UI_VmData
 	public bool ShowVmActualEnviromentVariables { get; set; }
 	[Newtonsoft.Json.JsonIgnore]
 	public List<KeyValue> ActualVariables { get; set; } = new List<KeyValue>();
-
+	[Newtonsoft.Json.JsonIgnore]
+	public TimeInfo LastUpdateTime { get; set; }
 	public bool Compare(UI_VmData other)
 	{
 		if (UniqueName != other.UniqueName)
@@ -234,4 +235,9 @@ public class IpAddress
 {
 	public string Ip { get; set; }
 	public string Port { get; set; }
+}
+
+public class TimeInfo
+{
+	public DateTime Time = DateTime.MinValue;
 }

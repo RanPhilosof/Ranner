@@ -60,16 +60,19 @@
 			<MudTd />
 			<MudTd />
 			<MudTd>
-				<MudTextField @bind-Value="@context.VmUniqueName" Required />
+				<MudTextField @bind-Value="@context.VmUniqueName" Label="VmName" Required />
 			</MudTd>
 			<MudTd>
-				<MudTextField @bind-Value="@context.Name" Required />
+				<MudTextField @bind-Value="@context.Name" Label="Name" Required />
 			</MudTd>
 			<MudTd>
-				<MudTextField @bind-Value="@context.Team" Required />
+				<MudTextField @bind-Value="@context.Team" Label="Team" Required />
 			</MudTd>
 			<MudTd>
-				<MudTextField @bind-Value="@context.StartDelayTime_mSec" Required />
+				<MudTextField @bind-Value="@context.SessionName" Label="Session" Required />
+			</MudTd>
+			<MudTd>
+				<MudTextField @bind-Value="@context.StartDelayTime_mSec" Label="StartDelayTime" Required />
 			</MudTd>
 			<MudTd/>
 		</RowEditingTemplate>
@@ -351,7 +354,9 @@
 										<MudTd DataLabel="Value">@envVarsContext.Value</MudTd>
 										<MudTd DataLabel="Value">@envVarsContext.DefaultValue</MudTd>
 										<MudTd DataLabel="Value">@envVarsContext.Description</MudTd>
-										<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveEnvVarItem(context.Id, envVarsContext))"></MudIconButton>
+										<MudTd>
+											<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveEnvVarItem(context.Id, envVarsContext))"></MudIconButton>
+										</MudTd>
 									</RowTemplate>
 									<RowEditingTemplate>
 										<MudTd />

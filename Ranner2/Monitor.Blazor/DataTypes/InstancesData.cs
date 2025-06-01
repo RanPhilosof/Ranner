@@ -64,6 +64,7 @@ public class UI_Instance
     public string VmUniqueName { get; set; } = string.Empty;
     public string Team { get; set; } = string.Empty;
 	public string Name { get; set; } = string.Empty;
+	public string SessionName { get; set; } = "Main";
     public bool RunOrStop { get; set; }
     public int StartDelayTime_mSec { get; set; }
 
@@ -113,6 +114,8 @@ public class UI_Instance
 		if (VmUniqueName != other.VmUniqueName)
 			return false;
 		if (Name != other.Name)
+			return false;
+		if (SessionName != other.SessionName) 
 			return false;
 		if (Team != other.Team) 
 			return false;

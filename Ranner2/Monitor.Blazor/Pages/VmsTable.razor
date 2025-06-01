@@ -17,6 +17,7 @@
 		<MudTh><strong>VmUniqueName</strong></MudTh>
 		<MudTh><strong>IpAddress</strong></MudTh>
 		<MudTh><strong>Port</strong></MudTh>
+		<MudTh><strong>Status</strong></MudTh>
 		<MudTh></MudTh>
 	</HeaderContent>
 	<RowTemplate>
@@ -29,6 +30,27 @@
 		<MudTd DataLabel="VmUniqueName">@context.UniqueName</MudTd>
 		<MudTd DataLabel="IpAddress">@context.IpAddress</MudTd>
 		<MudTd DataLabel="Port">@context.Port</MudTd>
+			@{
+				var icon = Icons.Filled.QuestionMark;
+				var color = Color.Dark;
+
+				if (context.LastUpdateTime == null || context.LastUpdateTime.Time == DateTime.MinValue)
+				{
+				}
+				else if (DateTime.Now.Subtract(context.LastUpdateTime.Time).TotalSeconds < 15)
+				{
+					icon = Icons.Filled.Wifi;
+					color = Color.Success;
+				}
+				else
+				{
+					icon = Icons.Filled.WifiOff;
+					color = Color.Error;
+				}
+				<MudTd>
+					<MudIcon Icon="@icon" Color="@color" Size="Size.Small" />
+				</MudTd>
+			}
 	</RowTemplate>
 	<RowEditingTemplate>
 		<MudTd/>
@@ -72,7 +94,9 @@
 									<MudTd/>
 									<MudTd DataLabel="Name">@compilersContext.CompilerName</MudTd>
 									<MudTd DataLabel="Path">@compilersContext.CompilerPath</MudTd>
-									<MudIconButton Disabled="@compilerDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveCompilerItem(context, compilersContext))"></MudIconButton>
+									<MudTd>
+										<MudIconButton Disabled="@compilerDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveCompilerItem(context, compilersContext))"></MudIconButton>
+									</MudTd>
 								</RowTemplate>
 								<RowEditingTemplate>
 									<MudTd/>
@@ -128,7 +152,9 @@
 									<MudTd DataLabel="Value">@envVarsContext.Value</MudTd>
 									<MudTd DataLabel="Value">@envVarsContext.DefaultValue</MudTd>
 									<MudTd DataLabel="Value">@envVarsContext.Description</MudTd>
-									<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveEnvVarItem(context, envVarsContext))"></MudIconButton>
+									<MudTd>
+										<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveEnvVarItem(context, envVarsContext))"></MudIconButton>
+									</MudTd>
 								</RowTemplate>
 								<RowEditingTemplate>
 									<MudTd/>

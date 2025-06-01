@@ -90,10 +90,10 @@ public class EnviromentVariablesResolverTests2
 	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm1", "Ser2" }, "Ser2_k13", "Ser2_v13_def")]
 	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm1", "Ser2" }, "Ser2_k14", "Ser2_v14 Ser1_v1")]
 
-	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm2", "Ser1" }, "Ser1_vm2_k1", "Ser1_vm2_v1")]
-	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm2", "Ser1" }, "Ser1_vm2_k2", "Ser1_vm2_v12 Ser1_vm2_v1")]
-	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm2", "Ser1" }, "Ser1_vm2_k3", "Ser1_vm2_v13_def")]
-	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm2", "Ser1" }, "Ser1_vm2_k4", "Ser1_vm2_v12_def")]
+	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm2", "Ser3" }, "Ser1_vm2_k1", "Ser1_vm2_v1")]
+	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm2", "Ser3" }, "Ser1_vm2_k2", "Ser1_vm2_v12 Ser1_vm2_v1")]
+	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm2", "Ser3" }, "Ser1_vm2_k3", "Ser1_vm2_v13_def")]
+	[InlineData(new[] { "EnvironmentVariables", "GlobalParameters", "vm2", "Ser3" }, "Ser1_vm2_k4", "Ser1_vm2_v14 Ser1_v1")]
 
 	public void Should_Resolve_Expected_EnvironmentVariables(String[] whereToCheck, string key, string expected)
     {
@@ -273,12 +273,28 @@ public class EnviromentVariablesResolverTests2
 									}
                                 }
                             },
+							{
+								new UI_Instance()
+								{
+									Name = "Ser3",
+									Id = 22,
+									VmUniqueName = "vm2",
+									ExtraVariables = new List<KeyValueComplex>()
+									{
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k1",  Value = "Ser1_vm2_v1" },
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k2", Value = "Ser1_vm2_v12 {srv[Ser3(Ser1_vm2_k1)]}", DefaultValue = "Ser1_vm2_v12_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k3", Value = "Ser1_vm2_v12 {srv[Ser2_k01]}", DefaultValue = "Ser1_vm2_v13_def"},
+										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k4", Value = "Ser1_vm2_v14 {srv[Ser1(Ser1_k1)]}", DefaultValue = "Ser1_vm2_v12_def"},
+									}
+								}
+							},
 														{
 								new UI_Instance()
 								{
-									Name = "Ser1",
+									Name = "Ser2",
 									Id = 22,
 									VmUniqueName = "vm2",
+									SessionName = "Secondary",
 									ExtraVariables = new List<KeyValueComplex>()
 									{
 										new Montior.Blazor.Data.KeyValueComplex() {  Active = true, Key = "Ser1_vm2_k1",  Value = "Ser1_vm2_v1" },
