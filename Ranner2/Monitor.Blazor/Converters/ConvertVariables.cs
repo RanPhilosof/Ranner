@@ -76,6 +76,9 @@ namespace Monitor.Blazor.Converters
 
             foreach (var instanceParams in uiInstanceData.Instances)
             {
+                if (instanceParams.Disabled || instanceParams.DisabledByGroups)
+                    continue;
+
                 var instanceParametersTree = new ParametersTree() { Name = instanceParams.Name, TypeName = srvTypeName, Id = instanceParams.Id };                
 
                 foreach (var instanceParam in instanceParams.ExtraVariables)
@@ -89,10 +92,31 @@ namespace Monitor.Blazor.Converters
                                 DefaultValue = instanceParam.DefaultValue,
                                 Description = instanceParam.Description,
                             });
+				}
 
-                }
-                
-                globalParametersTree.Childs[instanceParams.VmUniqueName].Childs.Add(instanceParametersTree.Name, instanceParametersTree);
+				if (!string.IsNullOrEmpty(instanceParams.Name))
+					instanceParametersTree.Parameters.Add("Services:MyService:Name", new Parameters() { IsActive = true, Key = "Services:MyService:Name", Value = instanceParams.Name });
+				if (!string.IsNullOrEmpty(instanceParams.InstanceId))
+					instanceParametersTree.Parameters.Add("Services:MyService:InstanceId", new Parameters() { IsActive = true, Key = "Services:MyService:InstanceId", Value = instanceParams.InstanceId });
+				if (!string.IsNullOrEmpty(instanceParams.RestApiPort))
+					instanceParametersTree.Parameters.Add("Services:MyService:RestApiPort", new Parameters() { IsActive = true, Key = $"Services:MyService:RestApiPort", Value = instanceParams.RestApiPort });
+
+				foreach (var instance in uiInstanceData.Instances)
+				{
+					if (!string.IsNullOrEmpty(instance.Name))
+						instanceParametersTree.Parameters.Add($"Services:{instance.Name}:Ip", new Parameters() { 
+                            IsActive = true, 
+                            Key = $"Services:{instance.Name}:Ip", 
+                            Value = uiVmsData.VmsDataList.Where(x => x.UniqueName == instance.VmUniqueName).FirstOrDefault().IpAddress 
+                        });
+					if (!string.IsNullOrEmpty(instance.RestApiPort))
+					{
+						instanceParametersTree.Parameters.Add($"Services:{instance.Name}:RestApiPort", new Parameters() { IsActive = true, Key = $"Services:{instance.Name}:RestApiPort", Value = instance.RestApiPort });
+						instanceParametersTree.Parameters.Add($"Services:{instance.Name}:SupportProberMonitor", new Parameters() { IsActive = true, Key = $"Services:{instance.Name}:SupportProberMonitor", Value = instance.SupportProberMonitor ? "true" : "false" });
+					}
+				}
+
+				globalParametersTree.Childs[instanceParams.VmUniqueName].Childs.Add(instanceParametersTree.Name, instanceParametersTree);
                 instanceParametersTree.Parent = globalParametersTree.Childs[instanceParams.VmUniqueName];
             }
 

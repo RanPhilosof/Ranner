@@ -3,6 +3,25 @@ using System.Text.Json.Serialization;
 
 namespace Montior.Blazor.Data;
 
+public class UI_SessionsData
+{
+	public List<UI_SessionData> SessionDataList { get; set; } = new List<UI_SessionData>();
+
+	public bool Compare(UI_SessionsData other)
+	{
+		if (SessionDataList.Count != other.SessionDataList.Count)
+			return false;
+
+		for (int i = 0; i < SessionDataList.Count; i++)
+		{
+			if (!SessionDataList[i].Compare(other.SessionDataList[i]))
+				return false;
+		}
+
+		return true;
+	}
+}
+
 public class UI_VmsData
 {
 	public List<UI_VmData> VmsDataList { get; set; } = new List<UI_VmData>();
@@ -146,6 +165,42 @@ public class UI_VmCompiler
 {
    public string CompilerName { get; set; } = string.Empty;
    public string CompilerPath { get; set; } = string.Empty;
+}
+
+public class UI_SessionData
+{
+	public string UniqueName { get; set; } = string.Empty;
+	public int UniqueId { get; set; }
+	
+	public bool ShowExtraEnviromentsVariables { get; set; }
+	public List<KeyValueComplex> ExtraVariables { get; set; } = new List<KeyValueComplex>();
+
+	public bool Compare(UI_SessionData other)
+	{
+		if (UniqueName != other.UniqueName)
+			return false;
+		if (UniqueId != other.UniqueId)
+			return false;
+
+		if (ExtraVariables.Count != other.ExtraVariables.Count)
+			return false;
+
+		for (int i = 0; i < ExtraVariables.Count; i++)
+		{
+			if (ExtraVariables[i].Active != other.ExtraVariables[i].Active)
+				return false;
+			if (ExtraVariables[i].DefaultValue != other.ExtraVariables[i].DefaultValue)
+				return false;
+			if (ExtraVariables[i].Description != other.ExtraVariables[i].Description)
+				return false;
+			if (ExtraVariables[i].Key != other.ExtraVariables[i].Key)
+				return false;
+			if (ExtraVariables[i].Value != other.ExtraVariables[i].Value)
+				return false;
+		}
+
+		return true;
+	}
 }
 
 public class KeyValue

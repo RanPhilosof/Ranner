@@ -329,30 +329,48 @@
 								          RowEditPreview="ExtraVariablesEdit"
 								          RowEditCommit="ExtraVariablesCommit">
 									<ColGroup>
+										<col style="width:0px;" />
 										<col style="width:200px;" />
-										<col style="width:150px;" />
-										<col style="width:850px;" />
+										<col style="width:200px;" />
+										<col style="width:200px;" />
+										<col style="width:200px;" />
+										<col style="width:500px;" />
 									</ColGroup>
 									<HeaderContent>
 										<MudTh/>
+										<MudTh><strong>Active</strong></MudTh>
 										<MudTh><strong>Name</strong></MudTh>
 										<MudTh><strong>Value</strong></MudTh>
+										<MudTh><strong>DefaultValue</strong></MudTh>
+										<MudTh><strong>Description</strong></MudTh>
 									</HeaderContent>
 									<RowTemplate>
 										<MudTd/>
+										<MudTd DataLabel="Active">@envVarsContext.Active</MudTd>
 										<MudTd DataLabel="Name">@envVarsContext.Key</MudTd>
 										<MudTd DataLabel="Value">@envVarsContext.Value</MudTd>
+										<MudTd DataLabel="Value">@envVarsContext.DefaultValue</MudTd>
+										<MudTd DataLabel="Value">@envVarsContext.Description</MudTd>
 										<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveEnvVarItem(context.Id, envVarsContext))"></MudIconButton>
 									</RowTemplate>
 									<RowEditingTemplate>
-										<MudTd/>
+										<MudTd />
 										<MudTd>
-											<MudTextField @bind-Value="@envVarsContext.Key" Required/>
+											<MudCheckBox @bind-Value="@envVarsContext.Active" />
 										</MudTd>
 										<MudTd>
-											<MudTextField @bind-Value="@envVarsContext.Value" Required/>
+											<MudTextField @bind-Value="@envVarsContext.Key" Required />
 										</MudTd>
-										<MudTd/>
+										<MudTd>
+											<MudTextField @bind-Value="@envVarsContext.Value" Required />
+										</MudTd>
+										<MudTd>
+											<MudTextField @bind-Value="@envVarsContext.DefaultValue" />
+										</MudTd>
+										<MudTd>
+											<MudTextField @bind-Value="@envVarsContext.Description" />
+										</MudTd>
+										<MudTd />
 									</RowEditingTemplate>
 								</MudTable>
 							</MudCardContent>

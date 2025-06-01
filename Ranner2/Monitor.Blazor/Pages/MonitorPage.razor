@@ -303,9 +303,9 @@
 					args.Add($"\tEnvVars:");
 					foreach (var envVar in app.Variables)
 						args.Add($"\t\t{envVar.Item1}={envVar.Item2}");
-					args.Add($"\tVmEnvVars:");
-					foreach (var vmEnvVar in agentSet.Item2.VmInstanceSettings.Variables)
-						args.Add($"\t\t{vmEnvVar.Item1}={vmEnvVar.Item2}");
+					//args.Add($"\tVmEnvVars:");
+					//foreach (var vmEnvVar in agentSet.Item2.VmInstanceSettings.Variables)
+					//	args.Add($"\t\t{vmEnvVar.Item1}={vmEnvVar.Item2}");
 					args.Add("--------");
 				}
 			}

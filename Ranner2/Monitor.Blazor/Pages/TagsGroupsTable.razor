@@ -20,7 +20,7 @@
 	<RowTemplate>
 		<MudTd>
 			<MudIconButton Icon="@(context.ShowValues == false ? @Icons.Material.Outlined.Sell : @Icons.Material.Filled.Sell)" Color="Color.Primary" Size="Size.Small" OnClick="@(() => ShowGroupsTagsInfo(context.Key))" />
-			                                                                                                                                                                                                      <MudIconButton Icon="@Icons.Material.Filled.RemoveCircle" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveGroupItem(context))" Disabled="@groupDisable"/>
+			<MudIconButton Icon="@Icons.Material.Filled.RemoveCircle" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveGroupItem(context))" Disabled="@groupDisable"/>
 		</MudTd>
 		<MudTd DataLabel="VmUniqueName">@context.Key</MudTd>
 	</RowTemplate>

@@ -1,6 +1,8 @@
 using AppMonitoring.SharedTypes;
 using CommandLine;
+using Monitor.Blazor.Converters;
 using Monitor.Blazor.Interfaces;
+using Monitor.Infra;
 using Montior.Blazor.Data;
 using MudBlazor;
 using MudBlazor.Extensions;
@@ -677,7 +679,8 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
-                        lastAppliedSettings.GroupTags,
+						lastAppliedSettings.GlobalVariables,
+						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
                         lastAppliedSettings.InstancesData);
 
@@ -727,7 +730,8 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
-                        lastAppliedSettings.GroupTags,
+						lastAppliedSettings.GlobalVariables,
+						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
                         lastAppliedSettings.InstancesData);
 
@@ -759,7 +763,8 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
-                        lastAppliedSettings.GroupTags,
+						lastAppliedSettings.GlobalVariables,
+						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
                         lastAppliedSettings.InstancesData);
 
@@ -791,6 +796,7 @@ namespace Monitor.Blazor.Services
 			{
 				var monitorAgentObjects = 
                     CreateMonitorAgentObjects(
+						lastAppliedSettings.GlobalVariables,
 						lastAppliedSettings.GroupTags, 
                         lastAppliedSettings.VmsData, 
                         lastAppliedSettings.InstancesData);
@@ -831,11 +837,14 @@ namespace Monitor.Blazor.Services
 
 				if (!dontSave)
                 {
+                    if (!Directory.Exists(userSettingsFolder))
+                        Directory.CreateDirectory(userSettingsFolder);
+
                     File.WriteAllText(Path.Combine(userSettingsFolder, monitorPageSettings.CurrentFileName + ".json"), JsonConvert.SerializeObject(monitorPageSettings, Formatting.Indented));
                     File.WriteAllText(lastConfigFileName, monitorPageSettings.CurrentFileName + ".json");
                 }
 
-                var monitorAgentObjects = CreateMonitorAgentObjects(monitorPageSettings.GroupTags, monitorPageSettings.VmsData, monitorPageSettings.InstancesData);
+                var monitorAgentObjects = CreateMonitorAgentObjects(monitorPageSettings.GlobalVariables, monitorPageSettings.GroupTags, monitorPageSettings.VmsData, monitorPageSettings.InstancesData);
 
                 Task.Run(
                     () =>
@@ -875,7 +884,8 @@ namespace Monitor.Blazor.Services
         }
 
 		private Dictionary<string, Tuple<IpAddress, MonitorAgentSettings>> CreateMonitorAgentObjects(
-            UI_GroupTags groupTagsClone,
+			UI_GlobalVariables globalVariablesClone,
+			UI_GroupTags groupTagsClone,
             UI_VmsData vmsDataClone,
             UI_InstancesData instancesDataClone)
         {
@@ -914,50 +924,72 @@ namespace Monitor.Blazor.Services
             }
 			#endregion Combine Inherit Tags
 
+
 			#region Add Environment Variables Of All Service IPs
+			var parametersTreeInitiator = new ParametersTreeInitiator();
+
+			var tree = parametersTreeInitiator.Create(
+                globalVariablesClone, 
+                vmsDataClone,
+				instancesDataClone);
+
+            // Add Here To Global Parameters (The Right Place Is Session Parameters But It Is Not Exist Yet)            
+
+
+			ParametersTreeInitiator.ResolveAllParameters(tree);
+			var mapService = ParametersTreeInitiator.BuildResolvedMapPerService(tree);
 
 			var instanceByIdEnvVars = new Dictionary<int, List<KeyValue>>();
-            foreach (var instance in instancesDataClone.Instances)
-                if (!instanceByIdEnvVars.ContainsKey(instance.Id))
-					instanceByIdEnvVars.Add(instance.Id, new List<KeyValue>());
 
-			var servicesNameAndAddress = new List<Tuple<int, string, string, string, bool>>();
-            var vmsByName = vmsDataClone.VmsDataList.ToDictionary(x => x.UniqueName, x => x);
-			foreach (var instance in instancesDataClone.Instances)
-            {
-                if (vmsByName.ContainsKey(instance.VmUniqueName) && (!(instance.Disabled || instance.DisabledByGroups)))
-                    servicesNameAndAddress.Add(Tuple.Create(instance.Id, instance.RestApiPort, instance.Name, vmsByName[instance.VmUniqueName].IpAddress, instance.SupportProberMonitor));
-			}
-
-            foreach (var instance in instancesDataClone.Instances)
-            {
-				instanceByIdEnvVars[instance.Id].AddRange(instance.ExtraVariables.Select(x => new KeyValue() { Key = x.Key, Value = x.Value }));
-
-                if (!string.IsNullOrEmpty(instance.Name))
-                    instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = "Services:MyService:Name", Value = instance.Name });
-
-                if (!string.IsNullOrEmpty(instance.InstanceId))
-					instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = "Services:MyService:InstanceId", Value = instance.InstanceId });
-
-                if (!string.IsNullOrEmpty(instance.RestApiPort))
-                {                    
-                    instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:MyService:RestApiPort", Value = instance.RestApiPort });
-
-                    _logger.LogInformation($"{instance.Id}: {instanceByIdEnvVars[instance.Id][instanceByIdEnvVars[instance.Id].Count - 1].Key} = {instanceByIdEnvVars[instance.Id][instanceByIdEnvVars[instance.Id].Count - 1].Value}");
-				}
-
-				foreach (var serviceNameAndAddress in servicesNameAndAddress)
-                {                    
-                    instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:Ip", Value = serviceNameAndAddress.Item4 });
-                    if (!string.IsNullOrEmpty(serviceNameAndAddress.Item2))
-                    {
-                        instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:RestApiPort", Value = serviceNameAndAddress.Item2 });
-						instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:SupportProberMonitor", Value = serviceNameAndAddress.Item5 ? "true" : "false" });
-					}
-				}
-            }
+            foreach (var mapped in mapService)
+                instanceByIdEnvVars[mapped.Key.Id] = mapped.Value.Select(x => new KeyValue() { Key = x.Key, Value = x.ResolvedValue }).ToList();
 
 			#endregion Add Environment Variables Of All Service IPs
+
+			//#region Add Environment Variables Of All Service IPs
+			//
+			//var instanceByIdEnvVars = new Dictionary<int, List<KeyValue>>();
+			//foreach (var instance in instancesDataClone.Instances)
+			//    if (!instanceByIdEnvVars.ContainsKey(instance.Id))
+			//		instanceByIdEnvVars.Add(instance.Id, new List<KeyValue>());
+			//
+			//var servicesNameAndAddress = new List<Tuple<int, string, string, string, bool>>();
+			//var vmsByName = vmsDataClone.VmsDataList.ToDictionary(x => x.UniqueName, x => x);
+			//foreach (var instance in instancesDataClone.Instances)
+			//{
+			//    if (vmsByName.ContainsKey(instance.VmUniqueName) && (!(instance.Disabled || instance.DisabledByGroups)))
+			//        servicesNameAndAddress.Add(Tuple.Create(instance.Id, instance.RestApiPort, instance.Name, vmsByName[instance.VmUniqueName].IpAddress, instance.SupportProberMonitor));
+			//}
+			//
+			//foreach (var instance in instancesDataClone.Instances)
+			//{
+			//	instanceByIdEnvVars[instance.Id].AddRange(instance.ExtraVariables.Select(x => new KeyValue() { Key = x.Key, Value = x.Value }));
+			//
+			//    if (!string.IsNullOrEmpty(instance.Name))
+			//        instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = "Services:MyService:Name", Value = instance.Name });
+			//
+			//    if (!string.IsNullOrEmpty(instance.InstanceId))
+			//		instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = "Services:MyService:InstanceId", Value = instance.InstanceId });
+			//
+			//    if (!string.IsNullOrEmpty(instance.RestApiPort))
+			//    {                    
+			//        instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:MyService:RestApiPort", Value = instance.RestApiPort });
+			//
+			//        _logger.LogInformation($"{instance.Id}: {instanceByIdEnvVars[instance.Id][instanceByIdEnvVars[instance.Id].Count - 1].Key} = {instanceByIdEnvVars[instance.Id][instanceByIdEnvVars[instance.Id].Count - 1].Value}");
+			//	}
+			//
+			//	foreach (var serviceNameAndAddress in servicesNameAndAddress)
+			//    {                    
+			//        instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:Ip", Value = serviceNameAndAddress.Item4 });
+			//        if (!string.IsNullOrEmpty(serviceNameAndAddress.Item2))
+			//        {
+			//            instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:RestApiPort", Value = serviceNameAndAddress.Item2 });
+			//			instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:SupportProberMonitor", Value = serviceNameAndAddress.Item5 ? "true" : "false" });
+			//		}
+			//	}
+			//}
+			//
+			//#endregion Add Environment Variables Of All Service IPs
 
 			var monitorAgentObjects = new Dictionary<string, Tuple<IpAddress, MonitorAgentSettings>>();
 
@@ -978,8 +1010,8 @@ namespace Monitor.Blazor.Services
                         foreach (var compiler in vmData.Compilers)
                             monitorAgentSettings.VmInstanceSettings.CompileTool.Add(Tuple.Create(compiler.CompilerName, compiler.CompilerPath));
 
-						foreach (var extraVariables in vmData.ExtraVariables)
-							monitorAgentSettings.VmInstanceSettings.Variables.Add(Tuple.Create(extraVariables.Key, extraVariables.Value));
+						//foreach (var extraVariables in vmData.ExtraVariables)
+						//	monitorAgentSettings.VmInstanceSettings.Variables.Add(Tuple.Create(extraVariables.Key, extraVariables.Value));
 					}
                 }
 
