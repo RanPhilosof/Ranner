@@ -7,6 +7,7 @@ public class UI_InstancesData
 	public const string RootFolderTemplateString = "{rootFolder}";
 	public const string packageFolderTemplateString = "{packageFolder}";
 
+	public List<string> PossibleProjects { get; set; } = new List<string>();
 	public string Project { get; set; } = string.Empty;
     public List<UI_Instance> Instances { get; set; } = new List<UI_Instance>();
 	public string ActiveGroups { 

@@ -4,7 +4,7 @@
 <MudCard>
 <MudTable Items="@groupTags.GroupTags" Hover="true" Breakpoint="Breakpoint.Sm"
           RowEditPreview="GroupEdit"
-          RowEditCommit="GroupCommit">
+			  RowEditCommit="GroupCommit" Dense="true">
 	<ColGroup>
 		<col style="width:150px;" />
 		<col style="width:150px;" />
@@ -20,7 +20,7 @@
 	<RowTemplate>
 		<MudTd>
 			<MudIconButton Icon="@(context.ShowValues == false ? @Icons.Material.Outlined.Sell : @Icons.Material.Filled.Sell)" Color="Color.Primary" Size="Size.Small" OnClick="@(() => ShowGroupsTagsInfo(context.Key))" />
-			<MudIconButton Icon="@Icons.Material.Filled.RemoveCircle" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveGroupItem(context))" Disabled="@groupDisable"/>
+				<MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveGroupItem(context))" Disabled="@groupDisable" />
 		</MudTd>
 		<MudTd DataLabel="VmUniqueName">@context.Key</MudTd>
 	</RowTemplate>
@@ -45,7 +45,7 @@
 						<MudCardContent Class="pa-0">
 							<MudTable Items="@context.Values" Context="groupContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0"
 							          RowEditPreview="GroupTagEdit"
-							          RowEditCommit="GroupTagCommit">
+										  RowEditCommit="GroupTagCommit" Dense="true" Style="background-color: #ADD8E6;">
 								<ColGroup>
 									<col style="width:200px;" />
 									<col style="width:150px;" />
@@ -60,7 +60,7 @@
 									<MudTd DataLabel="Active">@groupContext.IsActive</MudTd>
 									<MudTd DataLabel="Tag">@groupContext.Value</MudTd>
 									<MudTd>
-										<MudIconButton Disabled="@tagsDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveGroupTagItem(context, groupContext))"></MudIconButton>
+											<MudIconButton Disabled="@tagsDisable" Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveGroupTagItem(context, groupContext))"></MudIconButton>
 									</MudTd>
 								</RowTemplate>
 								<RowEditingTemplate>
@@ -76,13 +76,13 @@
 							</MudTable>
 						</MudCardContent>
 					</MudCard>
-					<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.AddCircle" Color="Color.Success" Disabled="@tagsDisable" OnClick="@(() => { @context.Values.Add( new StringWrapper() { Value = "tag" } ); })" />
+					<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.Add" Disabled="@tagsDisable" OnClick="@(() => { @context.Values.Add( new StringWrapper() { Value = "tag" } ); })" />
 				</td>
 			</MudTr>
 		}
 	</ChildRowContent>
 </MudTable>
-<MudIconButton Style="margin-left: 00px;" Icon="@Icons.Material.Filled.AddCircle"  Color="Color.Success" Disabled="@groupDisable" OnClick="@(
+<MudIconButton Style="margin-left: 00px;" Icon="@Icons.Material.Filled.Add" Disabled="@groupDisable" OnClick="@(
                                                                                          () =>
                                                                                          {
 	                                                                                         @groupTags.GroupTags.Add(new()

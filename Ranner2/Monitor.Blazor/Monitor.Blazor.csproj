@@ -28,5 +28,9 @@
 	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 	  </Content>
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Presets\" />
+	</ItemGroup>
 	
 </Project>

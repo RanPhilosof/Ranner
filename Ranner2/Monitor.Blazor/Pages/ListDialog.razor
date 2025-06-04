@@ -1,0 +1,59 @@
+﻿<MudDialog>
+    <TitleContent>
+        @Header
+    </TitleContent>
+
+    <DialogContent>
+        <MudTextField @bind-Value="_newItem" Label="New item" Variant="Variant.Outlined" />
+        <MudButton OnClick="@AddItem" Disabled="@string.IsNullOrWhiteSpace(_newItem)" Class="my-2">Add</MudButton>
+
+        <MudList>
+            @foreach (var item in LocalList)
+            {
+                <MudListItem>
+                    @item
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" Class="ml-auto" OnClick="@(() => RemoveItem(item))" />
+                </MudListItem>
+            }
+        </MudList>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Save" Color="Color.Primary">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public List<string> Projects { get; set; } = new();
+    [Parameter] public string Header { get; set; } = "Edit List";
+
+    private List<string> LocalList = new();
+    private string _newItem;
+
+    protected override void OnInitialized()
+    {
+        // Work on a local copy to avoid mutating original if cancelled
+        LocalList = Projects?.ToList() ?? new();
+    }
+
+    void AddItem()
+    {
+        if (!string.IsNullOrWhiteSpace(_newItem) && !LocalList.Contains(_newItem))
+        {
+            LocalList.Add(_newItem.Trim());
+            _newItem = string.Empty;
+        }
+    }
+
+    void RemoveItem(string item)
+    {
+        LocalList.Remove(item);
+    }
+
+    void Save() => MudDialog.Close(DialogResult.Ok(LocalList));
+    void Cancel() => MudDialog.Cancel();
+}

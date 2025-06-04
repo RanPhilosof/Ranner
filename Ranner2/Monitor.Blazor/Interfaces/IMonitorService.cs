@@ -9,6 +9,7 @@ namespace Monitor.Blazor.Interfaces
 	{
 		public string CurrentFileName { get; set; } = string.Empty;
 
+		public UI_Configuration Configuration { get; set; } = new UI_Configuration();
 		public UI_GroupTags GroupTags { get; set; } = new UI_GroupTags();
 		public UI_GlobalVariables GlobalVariables { get; set; } = new UI_GlobalVariables();
 		public UI_VmsData VmsData { get; set; } = new UI_VmsData();
@@ -32,7 +33,7 @@ namespace Monitor.Blazor.Interfaces
 		MonitorPageSettings GetCurrentSettings();
 		Dictionary<string, Tuple<IpAddress, MonitorAgentSettings>> GetCurrentSettingsInAgentsFormat();
 		List<string> GetPresetsSettingsList();
-		List<string> GetPossibleProjectsList();
+		//List<string> GetPossibleProjectsList();
 		string UserFileClosetAvailableName(string presetName);
 		MonitorPageSettings GetSettingsFromPresetsSettings(string presetName);
 		MonitorPageSettings GetSettingsFromUserSettings(string presetName);

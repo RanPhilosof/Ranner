@@ -2,8 +2,10 @@
 using CommandLine;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Newtonsoft.Json;
+using Serilog;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace Monitor.Agent.Services
@@ -61,7 +63,7 @@ namespace Monitor.Agent.Services
         #region Fields
         private Timer timer;
 
-        private ILogger _logger;
+        private Microsoft.Extensions.Logging.ILogger _logger;
 
         private ConcurrentQueue<Action> jobs = new ConcurrentQueue<Action>();
 
@@ -386,6 +388,9 @@ namespace Monitor.Agent.Services
 
             foreach (var app in monitorAgentSettings.ProcessInstancesSettings)
             {
+                if (!string.IsNullOrEmpty(app.ApplicationFileName))
+                    continue;
+
                 var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(app.ApplicationFileName));
 
                 foreach (var proc in processes)
@@ -547,6 +552,9 @@ namespace Monitor.Agent.Services
         {
             foreach (var app in processInstancesSettings)
             {
+                if (string.IsNullOrEmpty(app.ApplicationFileName))
+                    continue;
+
                 var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(app.ApplicationFileName));
 
                 foreach (var proc in processes)
@@ -579,80 +587,87 @@ namespace Monitor.Agent.Services
 
             foreach (var appInstance in processInstancesSettings)
             {
-                var runState = dictionaryProcessInstancesRunStateSettings[appInstance.Id];
-                if (runState.RunState == RunStateEnum.Run)
+                try
                 {
-                    if (processInstancesInfoDictionary[appInstance.Id].IsRunning)
+                    var runState = dictionaryProcessInstancesRunStateSettings[appInstance.Id];
+                    if (runState.RunState == RunStateEnum.Run)
                     {
-                        continue;
-                    }
-                    else
-                    {
-                        var appName = appInstance.Name;
-                        var appPath = appInstance.ApplicationPath;
-                        var appWorkingDir = appInstance.ApplicationWorkingDirectory;
-                        var appFileName = appInstance.ApplicationFileName;
-                        var appArguments = appInstance.Arguments;
-                        var appEnviromentVars = appInstance.Variables;
-
-                        var appEnvironmentFinalVars = new List<Tuple<string, string>>();
-                        var envKeys = new HashSet<String>();
-                        foreach (var env in appEnviromentVars.Concat(vmInstanceSettings.Variables))
+                        if (processInstancesInfoDictionary[appInstance.Id].IsRunning)
                         {
-                            if (!envKeys.Contains(env.Item1))
-                                envKeys.Add(env.Item1);
-                            else
-                                continue;
-
-                            appEnvironmentFinalVars.Add(Tuple.Create<string,string>(env.Item1, env.Item2));
+                            continue;
                         }
+                        else
+                        {
+                            var appName = appInstance.Name;
+                            var appPath = appInstance.ApplicationPath;
+                            var appWorkingDir = appInstance.ApplicationWorkingDirectory;
+                            var appFileName = appInstance.ApplicationFileName;
+                            var appArguments = appInstance.Arguments;
+                            var appEnviromentVars = appInstance.Variables;
 
-                        _logger.LogInformation($"App is not in running state ({appName}) ...");
+                            var appEnvironmentFinalVars = new List<Tuple<string, string>>();
+                            var envKeys = new HashSet<String>();
+                            foreach (var env in appEnviromentVars.Concat(vmInstanceSettings.Variables))
+                            {
+                                if (!envKeys.Contains(env.Item1))
+                                    envKeys.Add(env.Item1);
+                                else
+                                    continue;
 
-                        var res = ProcessHelper.StartAppInstance(
-                            appName,
-                            appPath,
-                            appFileName,
-                            appWorkingDir,
-                            appArguments,
-							appEnvironmentFinalVars,
-                            _logger,
-                            true);
+                                appEnvironmentFinalVars.Add(Tuple.Create<string, string>(env.Item1, env.Item2));
+                            }
 
-                        processInstancesInfoDictionary[appInstance.Id].IsRunning = res.IsRunning;
-                        processInstancesInfoDictionary[appInstance.Id].ProcessId = res.ProcessId;
-                        processInstancesInfoDictionary[appInstance.Id].ProcessName = res.ProcessName;
-                        processInstancesInfoDictionary[appInstance.Id].LastStartTime = DateTime.Now;
-                    }
-                }
-                else
-                {
-                    if (processInstancesInfoDictionary[appInstance.Id].IsRunning)
-                    {
-                        _logger.LogInformation($"About to kill ({processInstancesInfoDictionary[appInstance.Id].ProcessName}) because run status has changed to stop...");
+                            _logger.LogInformation($"App is not in running state ({appName}) ...");
 
-                        ProcessHelper.KillAppInstance(processInstancesInfoDictionary[appInstance.Id].ProcessId.Value, null, _logger);
+                            var res = ProcessHelper.StartAppInstance(
+                                appName,
+                                appPath,
+                                appFileName,
+                                appWorkingDir,
+                                appArguments,
+                                appEnvironmentFinalVars,
+                                _logger,
+                                true);
 
-                        processInstancesInfoDictionary[appInstance.Id].ProcessId = null;
-                        processInstancesInfoDictionary[appInstance.Id].IsRunning = false;
-
-                        continue;
+                            processInstancesInfoDictionary[appInstance.Id].IsRunning = res.IsRunning;
+                            processInstancesInfoDictionary[appInstance.Id].ProcessId = res.ProcessId;
+                            processInstancesInfoDictionary[appInstance.Id].ProcessName = res.ProcessName;
+                            processInstancesInfoDictionary[appInstance.Id].LastStartTime = DateTime.Now;
+                        }
                     }
                     else
                     {
-                        continue;
-                    }
-                }
+                        if (processInstancesInfoDictionary[appInstance.Id].IsRunning)
+                        {
+                            _logger.LogInformation($"About to kill ({processInstancesInfoDictionary[appInstance.Id].ProcessName}) because run status has changed to stop...");
 
-				if (CompilingInfo.InCompile.ContainsKey(appInstance.Id))
-					processInstancesInfoDictionary[appInstance.Id].IsCompiling = CompilingInfo.InCompile[appInstance.Id];
-			}
+                            ProcessHelper.KillAppInstance(processInstancesInfoDictionary[appInstance.Id].ProcessId.Value, null, _logger);
+
+                            processInstancesInfoDictionary[appInstance.Id].ProcessId = null;
+                            processInstancesInfoDictionary[appInstance.Id].IsRunning = false;
+
+                            continue;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (CompilingInfo.InCompile.ContainsKey(appInstance.Id))
+                        processInstancesInfoDictionary[appInstance.Id].IsCompiling = CompilingInfo.InCompile[appInstance.Id];
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex.ToString());
+                }
+            }
         }
     }
 
     public static class ProcessHelper
     {
-        public static ProcessInfo GetProcessInfo(int id, ILogger logger)
+        public static ProcessInfo GetProcessInfo(int id, Microsoft.Extensions.Logging.ILogger logger)
         {
             var processInfo = new ProcessInfo();
             
@@ -684,7 +699,7 @@ namespace Monitor.Agent.Services
             string workingDirectory,
             string arguments,
             List<Tuple<string, string>> enviromentVariables,
-            ILogger logger,
+			Microsoft.Extensions.Logging.ILogger logger,
             bool logConsoleOutput = false,
 			bool runInSeperateConsole = false)
         {
@@ -763,7 +778,7 @@ namespace Monitor.Agent.Services
         public static void KillAppInstance(
             int? processId,
             string appFileName,
-            ILogger logger)
+			Microsoft.Extensions.Logging.ILogger logger)
         {
             if (!processId.HasValue)
             {

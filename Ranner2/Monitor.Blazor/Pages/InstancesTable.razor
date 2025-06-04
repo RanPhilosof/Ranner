@@ -3,15 +3,18 @@
 
 @inject IDialogService DialogService
 
-<MudCard>
-	<MudSelect Variant="Variant.Outlined" @bind-Value="@instancesData.Project" Label="Project">
-		@foreach (var project in PossibleProjects)
-		{
-			<MudSelectItem Value="@(project)">@project</MudSelectItem>
-		}
-	</MudSelect>
+<MudCard>	
+	<div class="d-flex flex-grow-1 gap-4">								
+		<MudSelect FullWidth="true" Variant="Variant.Outlined" @bind-Value="@instancesData.Project" Label="Project">
+			@foreach (var project in instancesData.PossibleProjects)
+			{
+				<MudSelectItem Value="@(project)">@project</MudSelectItem>
+			}
+		</MudSelect>			
+		<MudIconButton Icon="@Icons.Material.Filled.PlaylistAdd" Size="Size.Large" OnClick="@OpenProjectsDialog" />
+	</div>	
 	<MudTable Items="@instancesData.Instances" Hover="true" Breakpoint="Breakpoint.Sm" RowEditPreview="InstancesEdit" RowEditCommit="InstancesCommit"
-		EditTrigger="@TableEditTrigger.EditButton" GroupBy="@groupDefinition" GroupHeaderStyle="padding-left: 0px" >
+		EditTrigger="@TableEditTrigger.EditButton" GroupBy="@groupDefinition" GroupHeaderStyle="padding-left: 0px" Dense="true">
 		<ColGroup>
 			<col style="width:50px;" />
 			<col style="width:220px;" />
@@ -40,6 +43,7 @@
 				<MudIconButton Icon="@(context.ShowInheritTagsFromGroup == false ? @Icons.Material.Outlined.Group : @Icons.Material.Filled.Group)" Color="@(!context.DisabledByGroups ? Color.Primary : Color.Dark)" Size="Size.Small" OnClick="@(() => ShowInheritTagsFromGroup(context.Id))" />
 				<MudIconButton Icon="@(context.ShowExtraEnvironmentVariables == false ? @Icons.Material.Outlined.ViewList : @Icons.Material.Filled.ViewList)" Color="@(!context.DisabledByGroups ? Color.Primary : Color.Dark)" Size="Size.Small" OnClick="@(() => ShowExtraEnvironmentVariables(context.Id))" />
 				<MudIconButton Icon="@(@Icons.Material.Outlined.House)" Color="@(!context.DisabledByGroups ? Color.Primary : Color.Dark)" Size="Size.Small" OnClick="@(() => CompiledClicked(context.Id))" />
+				<MudIconButton Icon="@(@Icons.Material.Outlined.OpenInBrowser)" Color="@((!string.IsNullOrEmpty(context.RestApiPort) && !context.DisabledByGroups) ? Color.Primary : Color.Dark)" Size="Size.Small" OnClick="@(() => OpenInBrowser(context.Id))" />
 			</MudTd>
 			<MudTd DataLabel="Id">@context.Id</MudTd>
 			<MudTd DataLabel="VmUniqueName">@context.VmUniqueName</MudTd>
@@ -53,7 +57,7 @@
 			<MudTd DataLabel="[Monitored] IsRunning">@context.IsRunning</MudTd>
 			<MudTd DataLabel="[Monitored] RunningTime">@context.RunningFor</MudTd>	
 			<MudTd>
-				<MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small" OnClick="@(() => RemoveInstancesItem(context))" Disabled="@instancesDataDisable" />
+				<MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveInstancesItem(context))" Disabled="@instancesDataDisable" />
 			</MudTd>
 		</RowTemplate>
 		<RowEditingTemplate>
@@ -75,6 +79,9 @@
 				<MudTextField @bind-Value="@context.StartDelayTime_mSec" Label="StartDelayTime" Required />
 			</MudTd>
 			<MudTd/>
+			<MudTd/>
+			<MudTd/>
+			<MudTd />
 		</RowEditingTemplate>
 		<GroupHeaderTemplate>
 			<MudTh Class="mud-table-cell-custom-group" colspan="0">@($"{context.GroupName}: {context.Key}") </MudTh>
@@ -83,15 +90,15 @@
 			@if (context.ShowAdvancedConfigurations)
 			{
 				<MudTd ColSpan="100">
-					<MudGrid>
-						<MudItem Style="width: 100%">
-							<MudPaper>
+					<MudGrid Style="background-color: #ADD8E6;">
+						<MudItem Style="width: 100%; background-color: #ADD8E6;">
+							<MudPaper Style="background-color: #ADD8E6;">
 								<MudForm>
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px;">
-												<MudField		Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="RootFolder"  />
-												<MudTextField	Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.RootFolder" />
+												<MudField Style="flex: 0 0 15%;  background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="RootFolder" />
+												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.RootFolder" />
 												<MudTooltip Text="For Example: d:\Git\Ultra.Resm\, The template is {rootFolder}">
 													<MudIcon Icon="@Icons.Material.Outlined.Help"/>
 												</MudTooltip>
@@ -102,7 +109,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="PackageFolder" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="PackageFolder" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.PackageFolder" />
 												<MudTooltip Text="For Example: Version-17\. The template is {packageFolder}">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -114,7 +121,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Configuration" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Configuration" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.Configuration" />
 												<MudTooltip Text="Release/Debug">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -126,7 +133,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Arguments" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Arguments" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.Arguments" />
 												<MudTooltip Text="">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -138,7 +145,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Tags" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Tags" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.TagsStr" />
 												<MudTooltip Text="argso;desktop;1extFlow;tamar;">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -150,7 +157,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="SupportTags" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="SupportTags" />
 												<MudCheckBox @bind-Value="@context.SupportTags" Label="" Class="d-flex justify-center align-center" />
 												<MudSpacer/>
 												<MudTooltip Text="">
@@ -165,7 +172,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="ApplicationFileName" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="ApplicationFileName" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.ApplicationFileName" />
 												<MudTooltip Text="">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -177,7 +184,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="ApplicationPath" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="ApplicationPath" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.ApplicationPath" />
 												<MudTooltip Text="c:/myService/{version}/bin/{configuration}">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -189,7 +196,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="ApplicationWorkingDirectory" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="ApplicationWorkingDirectory" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.ApplicationWorkingDirectory" />
 												<MudTooltip Text="">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -201,7 +208,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="CsProj" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="CsProj" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.CsProj" />
 												<MudTooltip Text="">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -213,8 +220,8 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Groups " />
-												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.Groups" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Groups " />
+												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.Groups" OnBlur="FinishedChangingGroups" />
 												<MudTooltip Text="Adding The Ability To Run Only Services Of Group1. Example Value: group1;group2;group3;">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
 												</MudTooltip>
@@ -225,7 +232,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="RestApi Port" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="RestApi Port" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.RestApiPort" />
 												<MudTooltip Text="">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -237,7 +244,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Support Prober Monitor" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Support Prober Monitor" />
 												<MudCheckBox @bind-Value="@context.SupportProberMonitor" Label="" Class="d-flex justify-center align-center" />
 												<MudSpacer />
 												<MudTooltip Text="">
@@ -250,7 +257,7 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
-												<MudField Style="flex: 0 0 15%" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Instance Id" />
+												<MudField Style="flex: 0 0 15%; background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="Instance Id" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.InstanceId" />
 												<MudTooltip Text="Adding The Ability To Distinct Between Extraction Flows Id">
 													<MudIcon Icon="@Icons.Material.Outlined.Help" />
@@ -268,8 +275,8 @@
 			@if (context.ShowInheritTagsFromGroup)
 			{
 				<MudTr>
-					<td colspan="100">
-						<MudCard Elevation="0">
+					<td colspan="100" style="background-color: #ADD8E6;">
+						<MudCard Elevation="0" Style="background-color: #ADD8E6;">
 							<MudCardHeader>
 								<CardHeaderContent>
 									<MudText Typo="Typo.body1">Inherit Group Tags for <strong>@context.Name</strong></MudText>
@@ -277,7 +284,7 @@
 							</MudCardHeader>
 							<MudCardContent Class="pa-0">
 								<MudTable Items="@context.InheritTagsFromGroup" Context="groupContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0"
-										  RowEditPreview="GroupTagEdit" RowEditCommit="GroupTagCommit" Dense="true">
+										  RowEditPreview="GroupTagEdit" RowEditCommit="GroupTagCommit" Dense="true" Style="background-color: #ADD8E6;">
 									<ColGroup>
 										<col style="width:5px;" />
 										<col style="width:5px;" />
@@ -320,8 +327,8 @@
  			@if (context.ShowExtraEnvironmentVariables)
 			{
 				<MudTr>
-					<td colspan="100">
-						<MudCard Elevation="0">
+					<td colspan="100" style="background-color: #ADD8E6;">
+						<MudCard Elevation="0" Style="background-color: #ADD8E6;">
 							<MudCardHeader>
 								<CardHeaderContent>
 									<MudText Typo="Typo.body1">Extra Environment Variables for <strong>@context.Name</strong></MudText>
@@ -330,14 +337,14 @@
 							<MudCardContent Class="pa-0">
 								<MudTable Items="@context.ExtraVariables" Context="envVarsContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0"
 								          RowEditPreview="ExtraVariablesEdit"
-								          RowEditCommit="ExtraVariablesCommit">
+										  RowEditCommit="ExtraVariablesCommit" Dense="true" Style="background-color: #ADD8E6;">
 									<ColGroup>
-										<col style="width:0px;" />
+										<col style="width:100px;" />
 										<col style="width:200px;" />
 										<col style="width:200px;" />
 										<col style="width:200px;" />
 										<col style="width:200px;" />
-										<col style="width:500px;" />
+										<col style="width:900px;" />
 									</ColGroup>
 									<HeaderContent>
 										<MudTh/>
@@ -355,7 +362,7 @@
 										<MudTd DataLabel="Value">@envVarsContext.DefaultValue</MudTd>
 										<MudTd DataLabel="Value">@envVarsContext.Description</MudTd>
 										<MudTd>
-											<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveEnvVarItem(context.Id, envVarsContext))"></MudIconButton>
+											<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveEnvVarItem(context.Id, envVarsContext))"></MudIconButton>
 										</MudTd>
 									</RowTemplate>
 									<RowEditingTemplate>
@@ -380,13 +387,13 @@
 								</MudTable>
 							</MudCardContent>
 						</MudCard>
-						<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.AddCircle" Disabled="@envVarDisable"  Color="Color.Success" OnClick="@(() => { @context.ExtraVariables.Add(new KeyValueComplex() { Key = "key", Value = "value" }); })" />
+						<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.Add" Disabled="@envVarDisable" OnClick="@(() => { @context.ExtraVariables.Add(new KeyValueComplex() { Key = "key", Value = "value" }); })" />
 					</td>
 				</MudTr>
 			}
 		</ChildRowContent>
 	</MudTable>
-	<MudIconButton Icon="@Icons.Material.Filled.AddCircle" Disabled="@instancesDataDisable" Color="Color.Success" OnClick="@(() => { @instancesData.Instances.Add(new UI_Instance() { Name = "instanceName", VmUniqueName = "Vm1", RunOrStop = false,  }); })" />
+	<MudIconButton Icon="@Icons.Material.Filled.Add" Disabled="@instancesDataDisable" OnClick="@(() => { @instancesData.Instances.Add(new UI_Instance() { Name = "instanceName", VmUniqueName = "Vm1", RunOrStop = false,  }); })" />
 	<MudSpacer/>
 	<MudTextField Variant="Variant.Outlined" Label="Active Application Groups" @bind-Value="instancesData.ActiveGroups" OnBlur="FinishedChangingGroups" />
 </MudCard>
@@ -396,10 +403,9 @@
 	[Parameter] public UI_InstancesData instancesData { get; set; } = new UI_InstancesData();
 
 	[Parameter] public EventCallback<int> OnCompileClicked { get; set; }
+	[Parameter] public EventCallback<int> OnOpenInBrowser { get; set; }
 
-	[Parameter] public EventCallback<int> OnRunOrStopClicked { get; set; }
-
-	[Parameter] public List<string> PossibleProjects { get; set; } = new List<string>();
+	[Parameter] public EventCallback<int> OnRunOrStopClicked { get; set; }	
 
 	private TableGroupDefinition<UI_Instance> groupDefinition = new() { Expandable = true, Indentation = false, IsInitiallyExpanded = true, Selector = (e) => e.Team, GroupName = "Team" };
 
@@ -440,6 +446,13 @@
 		{
 			await OnCompileClicked.InvokeAsync(id);
 		}
+	}
+
+	public async void OpenInBrowser(int id)
+	{
+		var inst = instancesData.Instances.FirstOrDefault(x => x.Id == id);
+		if (!string.IsNullOrEmpty(inst.RestApiPort) && !inst.DisabledByGroups)
+			await OnOpenInBrowser.InvokeAsync(id);
 	}
 
 	#region Instances
@@ -524,19 +537,19 @@
 	}
 
 	private bool envVarDisable;
-	
+
 	private void ExtraVariablesEdit(object element)
 	{
 		envVarDisable = true;
 		StateHasChanged();
 	}
-	
+
 	private void ExtraVariablesCommit(object element)
 	{
 		envVarDisable = false;
 		StateHasChanged();
 	}
-	
+
 	private void RemoveEnvVarItem(int id, KeyValueComplex keyVal)
 	{
 		var inst = instancesData.Instances.FirstOrDefault(x => x.Id == id);
@@ -544,4 +557,26 @@
 			inst.ExtraVariables.Remove(keyVal);
 	}
 	#endregion Extra Environment Variable
+
+	private async void OpenProjectsDialog()
+	{
+		var options = new DialogOptions() { MaxWidth = MaxWidth.Medium, CloseButton = true };
+		var parameters = new DialogParameters
+		{
+			{ "Projects", instancesData.PossibleProjects },
+			{ "Header", "Edit Project List" }
+		};
+
+		//DialogService.ShowAsync<TabsDialog>("", parameters, options);
+
+		var dialogResult = await DialogService.ShowAsync<ListDialog>("", parameters, options);
+		var result = await dialogResult.Result;
+
+		if (!result.Cancelled && result.Data is List<string> updatedList)
+		{
+			instancesData.PossibleProjects = updatedList;
+			InvokeAsync(StateHasChanged);
+			// Optional: Refresh UI or persist the list
+		}
+	}
 }

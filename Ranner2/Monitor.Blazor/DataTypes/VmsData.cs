@@ -3,6 +3,56 @@ using System.Text.Json.Serialization;
 
 namespace Montior.Blazor.Data;
 
+public class UI_Configuration
+{
+	public const string ForceStartAllOnLoad = "ForceStartAllOnLoad";
+	public const string ForceActiveGroupsOnLoad = "ForceActiveGroupsOnLoad";
+	public const string ForceConfigurationOnLoad = "ForceConfigurationOnLoad";
+	public const string ForceProjectOnLoad = "ForceProjectOnLoad";
+	public const string AutodeploymentMinioIp = "Autodeployment__Minio__Ip";
+	public const string AutodeploymentMinioPort = "Autodeployment__Minio__Port";
+	public const string AutodeploymentMinioUsername = "Autodeployment__Minio__UserName";
+	public const string AutodeploymentMinioPassword = "Autodeployment__Minio__Password";
+
+	public List<KeyValueComplex> Configuration { get; set; } = new List<KeyValueComplex>();
+	public bool ShowConfigurationVariables { get; set; } = false;
+
+	public void Init()
+	{
+		Configuration = new List<KeyValueComplex>();
+
+		Configuration.Add(new KeyValueComplex() { Active = false, Key = ForceStartAllOnLoad, Value = "true", Description = "Override Configuration Run State" });
+		Configuration.Add(new KeyValueComplex() { Active = false, Key = ForceActiveGroupsOnLoad, Value = "Target", Description = "Override Configuration Active Groups" });
+		Configuration.Add(new KeyValueComplex() { Active = false, Key = ForceConfigurationOnLoad, Value = "Release", Description = "Override Configuration Release / Debug" });
+		Configuration.Add(new KeyValueComplex() { Active = false, Key = ForceProjectOnLoad, Value = "Proj1", Description = "Override Configuration Active Project" });
+		Configuration.Add(new KeyValueComplex() { Active = false, Key = AutodeploymentMinioIp, Value = "127.0.0.1", Description = "Autodeployment - Minio Ip Address" });
+		Configuration.Add(new KeyValueComplex() { Active = false, Key = AutodeploymentMinioPort, Value = "9000", Description = "Autodeployment - Minio Port Address" });
+		Configuration.Add(new KeyValueComplex() { Active = false, Key = AutodeploymentMinioUsername, Value = "minioadmin", Description = "Autodeployment - Minio User Name" });
+		Configuration.Add(new KeyValueComplex() { Active = false, Key = AutodeploymentMinioPassword, Value = "minioadmin", Description = "Autodeployment - Minio User Password" });
+	}
+
+	public bool Compare(UI_Configuration other)
+	{
+		if (Configuration.Count != other.Configuration.Count)
+			return false;
+
+		for (int i = 0; i < Configuration.Count; i++)
+		{
+			if (Configuration[i].Key != other.Configuration[i].Key)
+				return false;
+			if (Configuration[i].Value != other.Configuration[i].Value)
+				return false;
+			if (Configuration[i].DefaultValue != other.Configuration[i].DefaultValue)
+				return false;
+			if (Configuration[i].Active != other.Configuration[i].Active)
+				return false;
+			if (Configuration[i].Description != other.Configuration[i].Description)
+				return false;
+		}
+		return true;
+	}
+}
+
 public class UI_SessionsData
 {
 	public List<UI_SessionData> SessionDataList { get; set; } = new List<UI_SessionData>();

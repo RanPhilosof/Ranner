@@ -4,28 +4,34 @@
 <MudCard>
 <MudTable Items="@vmsData.VmsDataList" Hover="true" Breakpoint="Breakpoint.Sm"
           RowEditPreview="VmsEdit"
-          RowEditCommit="VmsCommit">
+          RowEditCommit="VmsCommit"
+		  EditTrigger="@TableEditTrigger.EditButton"
+			  GroupHeaderStyle="padding-left: 0px" Dense="true">
 	<ColGroup>
+		<col style="width:80px;" />
 		<col style="width:220px;" />
 		<col style="width:150px;" />
 		<col style="width:150px;" />
 		<col style="width:150px;" />
-		<col style="width:150px;" />
+		<col style="width:1050px;" />
 	</ColGroup>
 	<HeaderContent>
 		<MudTh></MudTh>
-		<MudTh><strong>VmUniqueName</strong></MudTh>
+			<MudTh></MudTh>
+			<MudTh><strong>VmUniqueName</strong></MudTh>
 		<MudTh><strong>IpAddress</strong></MudTh>
 		<MudTh><strong>Port</strong></MudTh>
 		<MudTh><strong>Status</strong></MudTh>
 		<MudTh></MudTh>
+		<MudTh></MudTh>
 	</HeaderContent>
 	<RowTemplate>
+			<MudTh></MudTh>
 		<MudTd>
 			<MudIconButton Icon="@(context.ShowCompilerInfo == false ? @Icons.Material.Outlined.Build : @Icons.Material.Filled.Build)" Color="Color.Primary" Size="Size.Small" OnClick="@(() => ShowCompilerInfo(context.UniqueName))" />
 			<MudIconButton Icon="@(context.ShowExtraEnviromentsVariables == false ? @Icons.Material.Outlined.ViewList : @Icons.Material.Filled.ViewList)" Color="Color.Primary" Size="Size.Small" OnClick="@(() => ShowVariableInfo(context.UniqueName))" />
 			<MudIconButton Icon="@(context.ShowVmActualEnviromentVariables == false ? @Icons.Material.Outlined.Monitor : @Icons.Material.TwoTone.Monitor)" Color="Color.Primary" Size="Size.Small" OnClick="@(() => ShowMonitoredInfo(context.UniqueName))" />
-			<MudIconButton Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveVmsItem(context))" Disabled="@vmsDisable"/>
+			@* <MudIconButton Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveVmsItem(context))" Disabled="@vmsDisable"/> *@
 		</MudTd>
 		<MudTd DataLabel="VmUniqueName">@context.UniqueName</MudTd>
 		<MudTd DataLabel="IpAddress">@context.IpAddress</MudTd>
@@ -51,9 +57,13 @@
 					<MudIcon Icon="@icon" Color="@color" Size="Size.Small" />
 				</MudTd>
 			}
+		<MudTd>
+				<MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveVmsItem(context))" Disabled="@vmsDisable" />
+		</MudTd>
 	</RowTemplate>
 	<RowEditingTemplate>
 		<MudTd/>
+			<MudTd />
 		<MudTd>
 			<MudTextField @bind-Value="@context.UniqueName" Required/>
 		</MudTd>
@@ -64,13 +74,14 @@
 			<MudTextField @bind-Value="@context.Port" Required/>
 		</MudTd>
 		<MudTd/>
+			<MudTd />
 	</RowEditingTemplate>
 	<ChildRowContent>
 		@if (context.ShowCompilerInfo)
 		{
 			<MudTr>
-				<td colspan="100"> 
-					<MudCard Elevation="0">
+				<td colspan="100" style="background-color: #ADD8E6;">
+					<MudCard Elevation="0" Style="background-color: #ADD8E6;">
 						<MudCardHeader>
 							<CardHeaderContent>
 								<MudText Typo="Typo.body1">Compilers Info for <strong>@context.UniqueName</strong></MudText>
@@ -79,26 +90,32 @@
 						<MudCardContent Class="pa-0">
 							<MudTable Items="@context.Compilers" Context="compilersContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" 
 							          RowEditPreview="CompilerEdit"
-							          RowEditCommit="CompilerCommit">
+										  RowEditCommit="CompilerCommit" ApplyButtonPosition="@TableApplyButtonPosition.Start" Style="background-color: #ADD8E6;"
+									  Dense="true">
 								<ColGroup>
+									<col style="width:5px;" />
+									<col style="width:5px;" />
+									<col style="width:5px;" />
 									<col style="width:200px;" />
-									<col style="width:150px;" />
-									<col style="width:850px;" />
 								</ColGroup>
 								<HeaderContent>
-									<MudTh/>
+									<MudTd/>
+									<MudTd/>
 									<MudTh><strong>Name</strong></MudTh>
 									<MudTh><strong>Path</strong></MudTh>
 								</HeaderContent>
 								<RowTemplate>
 									<MudTd/>
+									<MudTd>
+										<div class="d-flex justify-end">
+												<MudIconButton Disabled="@compilerDisable" Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" Color="Color.Error" OnClick="@(() => RemoveCompilerItem(context, compilersContext))"></MudIconButton>
+										</div>
+									</MudTd>
 									<MudTd DataLabel="Name">@compilersContext.CompilerName</MudTd>
 									<MudTd DataLabel="Path">@compilersContext.CompilerPath</MudTd>
-									<MudTd>
-										<MudIconButton Disabled="@compilerDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveCompilerItem(context, compilersContext))"></MudIconButton>
-									</MudTd>
 								</RowTemplate>
 								<RowEditingTemplate>
+									<MudTd/>
 									<MudTd/>
 									<MudTd>
 										<MudTextField @bind-Value="@compilersContext.CompilerName" Required/>
@@ -106,20 +123,19 @@
 									<MudTd>
 										<MudTextField @bind-Value="@compilersContext.CompilerPath" Required/>
 									</MudTd>
-									<MudTd/>
 								</RowEditingTemplate>
 							</MudTable>
 						</MudCardContent>
 					</MudCard>
-					<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.AddCircle" Disabled="@compilerDisable"  Color="Color.Success" OnClick="@(() => { @context.Compilers.Add(new UI_VmCompiler() { CompilerName = "compilerName", CompilerPath = "compilerPath" }); })" />
+					<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.Add" Disabled="@compilerDisable" OnClick="@(() => { @context.Compilers.Add(new UI_VmCompiler() { CompilerName = "compilerName", CompilerPath = "compilerPath" }); })" />
 				</td>
 			</MudTr>
 		}
 		@if (context.ShowExtraEnviromentsVariables)
 		{
 			<MudTr>
-				<td colspan="100">
-					<MudCard Elevation="0">
+				<td colspan="100" style="background-color: #ADD8E6;">
+						<MudCard Elevation="0" Style="background-color: #ADD8E6;">
 						<MudCardHeader>
 							<CardHeaderContent>
 								<MudText Typo="Typo.body1">Extra Environment Variables for <strong>@context.UniqueName</strong></MudText>
@@ -128,14 +144,14 @@
 						<MudCardContent Class="pa-0">
 							<MudTable Items="@context.ExtraVariables" Context="envVarsContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0"
 							          RowEditPreview="ExtraVariablesEdit"
-							          RowEditCommit="ExtraVariablesCommit">
+										  RowEditCommit="ExtraVariablesCommit" Dense="true" Style="background-color: #ADD8E6;">
 								<ColGroup>
-									<col style="width:0px;" />
+									<col style="width:100px;" />
 									<col style="width:200px;" />
 									<col style="width:200px;" />
 									<col style="width:200px;" />
 									<col style="width:200px;" />
-									<col style="width:500px;" />
+									<col style="width:900px;" />
 								</ColGroup>
 								<HeaderContent>
 									<MudTh/>
@@ -153,7 +169,7 @@
 									<MudTd DataLabel="Value">@envVarsContext.DefaultValue</MudTd>
 									<MudTd DataLabel="Value">@envVarsContext.Description</MudTd>
 									<MudTd>
-										<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.RemoveCircle"  Color="Color.Error" OnClick="@(() => RemoveEnvVarItem(context, envVarsContext))"></MudIconButton>
+										<MudIconButton Disabled="@envVarDisable" Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveEnvVarItem(context, envVarsContext))"></MudIconButton>
 									</MudTd>
 								</RowTemplate>
 								<RowEditingTemplate>
@@ -178,15 +194,15 @@
 							</MudTable>
 						</MudCardContent>
 					</MudCard>
-						<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.AddCircle" Disabled="@envVarDisable" Color="Color.Success" OnClick="@(() => { @context.ExtraVariables.Add(new KeyValueComplex() { Key = "key", Value = "value" }); })" />
+						<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.Add" Disabled="@envVarDisable" OnClick="@(() => { @context.ExtraVariables.Add(new KeyValueComplex() { Key = "key", Value = "value" }); })" />
 				</td>
 			</MudTr>
 		}
 		@if (context.ShowVmActualEnviromentVariables)
 		{
 			<MudTr>
-				<td colspan="100">
-					<MudCard Elevation="0">
+				<td colspan="100" style="background-color: #ADD8E6;">
+						<MudCard Elevation="0" Style="background-color: #ADD8E6;">
 						<MudCardHeader>
 							<CardHeaderContent>
 								<MudText Typo="Typo.body1">Actual Environment Variables for <strong>@context.UniqueName</strong></MudText>
@@ -194,7 +210,7 @@
 						</MudCardHeader>
 						<MudCardContent Class="pa-0">
 							<MudTable Items="@context.ActualVariables" Context="actualEnvVarsContext" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" Elevation="0"
-								Filter="new Func<KeyValue,bool>(FilterFunc1)">
+										  Filter="new Func<KeyValue,bool>(FilterFunc1)" Style="background-color: #ADD8E6;">
 									<ToolBarContent>										
 										<MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
 									</ToolBarContent>
@@ -221,7 +237,7 @@
 		}
 	</ChildRowContent>
 </MudTable>
-	<MudIconButton Icon="@Icons.Material.Filled.AddCircle" Disabled="@vmsDisable"  Color="Color.Success" OnClick="@(() => { @vmsData.VmsDataList.Add(new UI_VmData() { UniqueName = "UniqueName", IpAddress = "localhost", Port = "5000" }); })" />
+	<MudIconButton Icon="@Icons.Material.Filled.Add" Disabled="@vmsDisable" OnClick="@(() => { @vmsData.VmsDataList.Add(new UI_VmData() { UniqueName = "UniqueName", IpAddress = "localhost", Port = "5000" }); })" />
 </MudCard>
 
 @code

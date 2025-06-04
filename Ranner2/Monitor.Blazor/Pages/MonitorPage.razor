@@ -7,9 +7,12 @@
 
 @inject IMonitorService monitorAgentService
 @inject IDialogService DialogService
+@inject IJSRuntime JS
 
 <MudGrid>
 	<MudCard Class="mt-4">
+		<MudText><strong>Configuration</strong></MudText>
+		<ConfigurationOverride configuration="@configuration" />
 		<MudText><strong>Groups</strong></MudText>
 		<TagsGroupsTable groupTags="@groupTags"/>
 		<MudText><strong>Global Variables</strong></MudText>
@@ -17,7 +20,7 @@
 		<MudText><strong>Virtual Machines</strong></MudText>
 		<VmsTable vmsData="@vmsData"/>
 		<MudText><strong>Instances</strong></MudText>
-		<InstancesTable OnCompileClicked="@Compile" OnRunOrStopClicked="@RunOrStopChanged" instancesData="@instancesData" PossibleProjects="@possibleProjects" />
+		<InstancesTable OnOpenInBrowser="@OpenInBrowser" OnCompileClicked="@Compile" OnRunOrStopClicked="@RunOrStopChanged" instancesData="@instancesData"/>
 	</MudCard>
 	<MudStack Row="true">
 		<MudPaper Class="pa-4 mt-4">
@@ -80,6 +83,7 @@
 				activeConfigurationFileName = monitorAgentService.UserFileClosetAvailableName(p);
 				var settings = monitorAgentService.GetSettingsFromPresetsSettings(p).Clone();
 
+				configuration = settings.Configuration;
 				groupTags = settings.GroupTags;
 				globalVariables = settings.GlobalVariables;
 				vmsData = settings.VmsData;
@@ -96,6 +100,7 @@
 	{
 		var settings = monitorAgentService.GetSettingsFromUserSettings(activeConfigurationFileName).Clone();
 
+		configuration = settings.Configuration;
 		groupTags = settings.GroupTags;
 		globalVariables = settings.GlobalVariables;
 		vmsData = settings.VmsData;
@@ -148,11 +153,58 @@
 		}
 	}
 
+	private async void OpenInBrowser(int instanceId)
+	{
+		try
+		{
+			{
+				var lastAppliedSettings = monitorAgentService.GetCurrentSettings().Clone();
+
+				var ins = lastAppliedSettings.InstancesData.Instances.FirstOrDefault(x => x.Id == instanceId);
+				if (ins != null)
+				{
+					if (!string.IsNullOrEmpty(ins.RestApiPort))
+					{
+						var vm = lastAppliedSettings.VmsData.VmsDataList.FirstOrDefault(x => x.UniqueName == ins.VmUniqueName);
+						if (vm != null)
+						{
+							var ip = vm.IpAddress;
+							if (!string.IsNullOrEmpty(ip))
+							{
+								string urlLink = string.Empty;
+
+								if (ins.ApplicationFileName.ToLowerInvariant().Contains("blazor") 
+									|| 
+									ins.ApplicationPath.ToLowerInvariant().Contains("blazor")
+									||
+									ins.ApplicationWorkingDirectory.ToLowerInvariant().Contains("blazor"))
+								{
+									urlLink = $"http://{ip}:{ins.RestApiPort}";
+								}
+								else
+								{
+									urlLink = $"http://{ip}:{ins.RestApiPort}/swagger";
+								}
+
+								await JS.InvokeVoidAsync("open", urlLink, "_blank");
+							}
+						}
+					}
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.Write(ex);
+		}
+	}
+
 	private void ApplyChanges()
 	{		
 		var monitorPageSettings = new MonitorPageSettings()
 			{
 				CurrentFileName = activeConfigurationFileName,
+				Configuration = configuration,
 				InstancesData = instancesData,
 				VmsData = vmsData,
 				GroupTags = groupTags,
@@ -290,7 +342,7 @@
 
 			Thread.Sleep(1000);
 
-			List<string> args = new List<string>();
+			List<List<string>> args = new List<List<string>> ();
 
 			var currentSettingsInAgentsFormat = monitorAgentService.GetCurrentSettingsInAgentsFormat();
 			foreach (var vm in currentSettingsInAgentsFormat)
@@ -298,22 +350,22 @@
 				var agentSet = vm.Value;
 				foreach (var app in agentSet.Item2.ProcessInstancesSettings)
 				{
-					args.Add($"{app.Name}:");
-					args.Add($"\tArgs: {app.Arguments}");
-					args.Add($"\tEnvVars:");
+					var appInst = new List<string>() { { app.Name } };										
+					appInst.Add($"Arguments:");
+					appInst.Add($"\t{app.Arguments}");
+					appInst.Add($"EnvVars:");
 					foreach (var envVar in app.Variables)
-						args.Add($"\t\t{envVar.Item1}={envVar.Item2}");
-					//args.Add($"\tVmEnvVars:");
-					//foreach (var vmEnvVar in agentSet.Item2.VmInstanceSettings.Variables)
-					//	args.Add($"\t\t{vmEnvVar.Item1}={vmEnvVar.Item2}");
-					args.Add("--------");
+						appInst.Add($"\t{envVar.Item1}={envVar.Item2}");
+					args.Add(appInst);
 				}
 			}
 
 			var options = new DialogOptions() { MaxWidth = MaxWidth.ExtraExtraLarge };
-			var parameters = new DialogParameters<ArgsDialog>();
-			parameters.Add("Text", args);
-			DialogService.ShowAsync<ArgsDialog>("", parameters, options);
+			var parameters = new DialogParameters<TabsDialog>();
+			parameters.Add("Tabs", args);
+			parameters.Add("Header", "Application Arguments & Environemnt Variables Info");
+
+			DialogService.ShowAsync<TabsDialog>("", parameters, options);
 		}
 		catch (Exception ex)
 		{
@@ -346,11 +398,12 @@
 		ApplyChanges();
 	}
 
+	private UI_Configuration configuration { get; set; } = new UI_Configuration();
 	private UI_GlobalVariables globalVariables { get; set; } = new UI_GlobalVariables();
 	private UI_GroupTags groupTags { get; set; } = new UI_GroupTags();
 	private UI_VmsData vmsData { get; set; } = new UI_VmsData();
 	private UI_InstancesData instancesData { get; set; } = new UI_InstancesData();
-	private List<string> possibleProjects { get; set; } = new List<string>();
+	//private List<string> possibleProjects { get; set; } = new List<string>();
 
 	private Timer updateTimer;
 
@@ -360,11 +413,14 @@
 
 		var m = monitorAgentService.GetCurrentSettings().Clone();
 
+		configuration = m.Configuration;
 		groupTags = m.GroupTags;
 		globalVariables = m.GlobalVariables;
 		instancesData = m.InstancesData;
 		vmsData = m.VmsData;
 		activeConfigurationFileName = m.CurrentFileName;
+
+		//possibleProjects = instancesData.PossibleProjects;
 
 		updateTimer = new Timer(UpdateStatusWrapper, null, 2500, Timeout.Infinite);
 
@@ -374,6 +430,7 @@
 
 	private void SettingsChangedFromRestApi(MonitorPageSettings monitorPageSettings)
 	{
+		configuration = monitorPageSettings.Configuration;
 		groupTags = monitorPageSettings.GroupTags;
 		globalVariables = monitorPageSettings.GlobalVariables;
 		instancesData = monitorPageSettings.InstancesData;
@@ -383,7 +440,7 @@
 	private void InitPresetsList()
 	{
 		presets.AddRange(monitorAgentService.GetPresetsSettingsList());
-		possibleProjects = monitorAgentService.GetPossibleProjectsList();
+		//possibleProjects = monitorAgentService.GetPossibleProjectsList();
 	}
 
 	private bool applyButtonVariant = false;
@@ -401,7 +458,9 @@
 				||
 				!lastAppliedSettings.VmsData.Compare(vmsData)
 				||
-				!lastAppliedSettings.InstancesData.Compare(instancesData));
+				!lastAppliedSettings.InstancesData.Compare(instancesData))
+				||
+				!lastAppliedSettings.Configuration.Compare(configuration);
 		}
 		catch (Exception ex)
 		{
@@ -413,7 +472,7 @@
 	{
 		try
 		{
-			UpdateStatus(groupTags, globalVariables, vmsData, instancesData);
+			UpdateStatus(configuration, groupTags, globalVariables, vmsData, instancesData);
 			CompareCurrentVsLastApply();
 			InvokeAsync(StateHasChanged);
 		}
@@ -427,7 +486,7 @@
 		}
 	}
 
-	private void UpdateStatus(UI_GroupTags groupTags, UI_GlobalVariables globalVariables, UI_VmsData vmsData, UI_InstancesData instancesData)
+	private void UpdateStatus(UI_Configuration configuration, UI_GroupTags groupTags, UI_GlobalVariables globalVariables, UI_VmsData vmsData, UI_InstancesData instancesData)
 	{
 		var infos = monitorAgentService.GetAgentsPeriodicInfos();
 

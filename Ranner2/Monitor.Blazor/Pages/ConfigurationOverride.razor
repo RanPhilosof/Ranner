@@ -1,0 +1,100 @@
+﻿@using Montior.Blazor.Data
+@using MudBlazor
+
+<MudCard>
+	<MudTr>
+
+		<MudIconButton Size="Size.Medium" Icon="@(configuration.ShowConfigurationVariables == false ? @Icons.Material.Outlined.ViewList : @Icons.Material.Filled.ViewList)" Color="@Color.Primary" OnClick="@(() => ShowConfigurationParams())" />
+
+		<td colspan="100">
+			@if (configuration.ShowConfigurationVariables)
+			{
+				<MudCard Elevation="0">
+
+					<MudCardHeader>
+						<CardHeaderContent>
+							<MudText Typo="Typo.body1">Configurations</MudText>
+						</CardHeaderContent>
+					</MudCardHeader>
+
+					<MudCardContent Class="pa-0">
+						<MudTable Items="@configuration.Configuration" Context="configParamsContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0"
+								  RowEditPreview="ConfigParamsEdit"
+								  RowEditCommit="ConfigParamsCommit" Dense="true" Style="background-color: #ADD8E6;">
+							<ColGroup>
+								<col style="width:0px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />								
+								<col style="width:200px;" />
+								<col style="width:900px;" />
+							</ColGroup>
+							<HeaderContent>
+								<MudTh />
+								<MudTh><strong>Active</strong></MudTh>
+								<MudTh><strong>Name</strong></MudTh>
+								<MudTh><strong>Value</strong></MudTh>								
+								<MudTh><strong>Description</strong></MudTh>
+							</HeaderContent>
+							<RowTemplate>
+								<MudTd />
+								<MudTd DataLabel="Active">@configParamsContext.Active</MudTd>
+								<MudTd DataLabel="Name">@configParamsContext.Key</MudTd>
+								<MudTd DataLabel="Value">@configParamsContext.Value</MudTd>								
+								<MudTd DataLabel="Value">@configParamsContext.Description</MudTd>
+								<MudTd>
+									@* <MudIconButton Disabled="@configurationVarsDisable" Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveConfigParamsItem(configParamsContext))"></MudIconButton> *@
+								</MudTd>
+							</RowTemplate>
+							<RowEditingTemplate>
+								<MudTd />
+								<MudTd>
+									<MudCheckBox @bind-Value="@configParamsContext.Active" />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@configParamsContext.Key" ReadOnly />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@configParamsContext.Value" Required />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@configParamsContext.Description" ReadOnly />
+								</MudTd>
+								<MudTd />
+							</RowEditingTemplate>
+						</MudTable>
+					</MudCardContent>
+				</MudCard>
+				@* <MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.Add" Disabled="@configurationVarsDisable" OnClick="@(() => { @configuration.Configuration.Add(new KeyValueComplex() { Active = false, Key = "key", Value = "value", DefaultValue = "", Description = ""}); })" /> *@
+			}
+		</td>
+	</MudTr>
+</MudCard>
+
+@code
+{
+	[Parameter] public UI_Configuration configuration { get; set; }
+
+	private bool configurationVarsDisable;
+
+	private void ConfigParamsEdit(object element)
+	{
+		configurationVarsDisable = true;
+		StateHasChanged();
+	}
+
+	private void ConfigParamsCommit(object element)
+	{
+		configurationVarsDisable = false;
+		StateHasChanged();
+	}
+
+	// private void RemoveConfigParamsItem(KeyValueComplex keyVal)
+	// {
+		// configuration.Configuration.Remove(keyVal);
+	// }
+
+	private void ShowConfigurationParams()
+	{
+		configuration.ShowConfigurationVariables = !configuration.ShowConfigurationVariables;
+	}
+}
