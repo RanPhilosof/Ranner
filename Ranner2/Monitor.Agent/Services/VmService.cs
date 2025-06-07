@@ -1,6 +1,7 @@
 ﻿using AppMonitoring.SharedTypes;
 using CommandLine;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Monitor.Infra;
 using Newtonsoft.Json;
 using Serilog;
 using System.Collections.Concurrent;
@@ -388,7 +389,7 @@ namespace Monitor.Agent.Services
 
             foreach (var app in monitorAgentSettings.ProcessInstancesSettings)
             {
-                if (!string.IsNullOrEmpty(app.ApplicationFileName))
+                if (string.IsNullOrEmpty(app.ApplicationFileName))
                     continue;
 
                 var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(app.ApplicationFileName));
@@ -619,6 +620,19 @@ namespace Monitor.Agent.Services
 
                             _logger.LogInformation($"App is not in running state ({appName}) ...");
 
+                            if (!File.Exists(Path.Combine(appPath, appFileName)) && appInstance.UseImage)
+                            {
+								_logger.LogInformation($"Downloading & Extracting ({appName}) ...");
+
+                                DownloadFromMonitor(
+                                    appInstance.RannerMonitorBaseUrl, 
+                                    appInstance.UniqueImageName, 
+                                    appInstance.ZipFileName,
+									Path.Combine(Path.Combine(appInstance.FolderToExtract, ".."), appInstance.ZipFileName));
+
+                                ExtractZip(Path.Combine(Path.Combine(appInstance.FolderToExtract, ".."), appInstance.ZipFileName), appInstance.FolderToExtract);
+							}
+
                             var res = ProcessHelper.StartAppInstance(
                                 appName,
                                 appPath,
@@ -633,7 +647,12 @@ namespace Monitor.Agent.Services
                             processInstancesInfoDictionary[appInstance.Id].ProcessId = res.ProcessId;
                             processInstancesInfoDictionary[appInstance.Id].ProcessName = res.ProcessName;
                             processInstancesInfoDictionary[appInstance.Id].LastStartTime = DateTime.Now;
-                        }
+                            if (appInstance.UseImage)
+							    processInstancesInfoDictionary[appInstance.Id].ZipFileName = Path.GetFileNameWithoutExtension(appInstance.ZipFileName);
+                            else
+								processInstancesInfoDictionary[appInstance.Id].ZipFileName = string.Empty;
+
+						}
                     }
                     else
                     {
@@ -641,7 +660,8 @@ namespace Monitor.Agent.Services
                         {
                             _logger.LogInformation($"About to kill ({processInstancesInfoDictionary[appInstance.Id].ProcessName}) because run status has changed to stop...");
 
-                            ProcessHelper.KillAppInstance(processInstancesInfoDictionary[appInstance.Id].ProcessId.Value, null, _logger);
+                            if (processInstancesInfoDictionary[appInstance.Id].ProcessId.HasValue)
+                                ProcessHelper.KillAppInstance(processInstancesInfoDictionary[appInstance.Id].ProcessId.Value, null, _logger);
 
                             processInstancesInfoDictionary[appInstance.Id].ProcessId = null;
                             processInstancesInfoDictionary[appInstance.Id].IsRunning = false;
@@ -663,7 +683,26 @@ namespace Monitor.Agent.Services
                 }
             }
         }
-    }
+
+		private void ExtractZip(string fullPathZipFileName, string folderToExtract)
+		{
+			var zipExtractor = new ZipExtractor();
+			zipExtractor.ExtractAllFiles(fullPathZipFileName, folderToExtract);
+		}
+
+		private void DownloadFromMonitor(string baseUrl, string uniqueImageName, string zipFileName, string saveToFullPathAndFileName)
+		{
+			var dir = Path.GetDirectoryName(saveToFullPathAndFileName);
+
+			if (!Directory.Exists(dir))
+				Directory.CreateDirectory(dir);
+
+			var webDownloader = new WebFileDownloader();
+            var response = webDownloader.DownloadFileWithExtraInfoAsync($"{baseUrl}/download/", zipFileName, uniqueImageName, saveToFullPathAndFileName);
+
+			response.Wait();
+		}
+	}
 
     public static class ProcessHelper
     {
@@ -729,16 +768,11 @@ namespace Monitor.Agent.Services
                 foreach (var envVar in enviromentVariables)
                 {
                     process.StartInfo.Environment.Add(envVar.Item1, envVar.Item2); //process.StartInfo.EnvironmentVariables.Add(envVar.Item1, envVar.Item2);
-					sb.AppendLine($"{envVar.Item1} {envVar.Item2}");
+					sb.AppendLine($@"{'\t'}{'\t'}{envVar.Item1} {envVar.Item2}");
                 }
             
-
     			logger.LogInformation(
-                $@"Starting App {appName} ... 
-                   (WorkDir: {process.StartInfo.WorkingDirectory}, 
-                    FileName: {process.StartInfo.FileName}, 
-                    Args: {process.StartInfo.Arguments}
-                    EnvVars: {sb.ToString()})");
+                    $@"{'\n'}Starting App {appName}: {'\n'}{'\t'}WorkDir: {process.StartInfo.WorkingDirectory} {'\n'}{'\t'}FileName: {process.StartInfo.FileName}, {'\n'}{'\t'}Args: {process.StartInfo.Arguments} {'\n'}{'\t'}EnvVars: {'\n'}{sb.ToString()}");
 			}
 
 			if (logConsoleOutput)

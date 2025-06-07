@@ -9,6 +9,7 @@ namespace Monitor.Blazor.Interfaces
 	{
 		public string CurrentFileName { get; set; } = string.Empty;
 
+		public UI_ImagesVariables ImagesVariables { get; set; } = new UI_ImagesVariables();
 		public UI_Configuration Configuration { get; set; } = new UI_Configuration();
 		public UI_GroupTags GroupTags { get; set; } = new UI_GroupTags();
 		public UI_GlobalVariables GlobalVariables { get; set; } = new UI_GlobalVariables();

@@ -30,10 +30,11 @@
 			<MudTh><strong>Name</strong></MudTh>
 			<MudTh><strong>RunOrStop</strong></MudTh>
 			<MudTh><strong>DelayStartTime(mSec)</strong></MudTh>
-			<MudTh><strong>[Monitored] ProcessName</strong></MudTh>
-			<MudTh><strong>[Monitored] ProcessId</strong></MudTh>
-			<MudTh><strong>[Monitored] IsRunning</strong></MudTh>
-			<MudTh><strong>[Monitored] RunningTime</strong></MudTh>
+			<MudTh><strong>[M] Version</strong></MudTh>
+			<MudTh><strong>[M] ProcessName</strong></MudTh>
+			<MudTh><strong>[M] ProcessId</strong></MudTh>
+			<MudTh><strong>[M] IsRunning</strong></MudTh>
+			<MudTh><strong>[M] RunningTime</strong></MudTh>
 			<MudTh></MudTh>
 			<MudTh></MudTh>
 		</HeaderContent>
@@ -52,10 +53,11 @@
 				<MudSwitch T="bool" Value="@context.RunOrStop" Color="Color.Primary" Label="" ValueChanged="@((newVal) => RunOrStopClicked(newVal, context.Id))" />
 			</MudTd>
 			<MudTd DataLabel="DelayStartTime(mSec)">@context.StartDelayTime_mSec</MudTd>
-			<MudTd DataLabel="[Monitored] ProcessName">@context.ProcessName</MudTd>
-			<MudTd DataLabel="[Monitored] ProcessId">@context.ProcessId</MudTd>
-			<MudTd DataLabel="[Monitored] IsRunning">@context.IsRunning</MudTd>
-			<MudTd DataLabel="[Monitored] RunningTime">@context.RunningFor</MudTd>	
+			<MudTd DataLabel="[M] Version">@context.ZipFileName</MudTd>
+			<MudTd DataLabel="[M] ProcessName">@context.ProcessName</MudTd>
+			<MudTd DataLabel="[M] ProcessId">@context.ProcessId</MudTd>
+			<MudTd DataLabel="[M] IsRunning">@context.IsRunning</MudTd>
+			<MudTd DataLabel="[M] RunningTime">@context.RunningFor</MudTd>	
 			<MudTd>
 				<MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveInstancesItem(context))" Disabled="@instancesDataDisable" />
 			</MudTd>
@@ -80,6 +82,7 @@
 			</MudTd>
 			<MudTd/>
 			<MudTd/>
+			<MudTd />
 			<MudTd/>
 			<MudTd />
 		</RowEditingTemplate>
@@ -97,6 +100,40 @@
 									<MudGrid>
 										<MudItem xs="12">
 											<div style="display: flex; width: 100% gap: 8px;">
+												<MudField Style="flex: 0 0 15%;  background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="ImageUniqueName" />
+												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.ImageUniqueName" />
+												<MudTooltip Text="Image Unique Name From: Images -> Images Configuration">
+													<MudIcon Icon="@Icons.Material.Outlined.Help" />
+												</MudTooltip>
+											</div>
+										</MudItem>
+									</MudGrid>
+									<MudGrid>
+										<MudItem xs="12">
+											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
+												<MudField Style="flex: 0 0 15%;  background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="ImageExtractRootFolder" />
+												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.ImageExtractRootFolder" />
+												<MudTooltip Text="For Example: d:\Git\Ultra.Resm\, The template is {rootFolder}">
+													<MudIcon Icon="@Icons.Material.Outlined.Help"/>
+												</MudTooltip>
+											</div>
+										</MudItem>
+									</MudGrid>
+									<MudGrid>
+										<MudItem xs="12">
+											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
+												<MudField Style="flex: 0 0 15%;  background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="UseImage" />
+												<MudCheckBox @bind-Value="@context.UseImage" Label="" Class="d-flex justify-center align-center" />
+												<MudSpacer/>
+												<MudTooltip Text="">
+													<MudIcon Icon="@Icons.Material.Outlined.Help" />
+												</MudTooltip>
+											</div>
+										</MudItem>
+									</MudGrid>
+									<MudGrid>
+										<MudItem xs="12">
+											<div style="display: flex; width: 100% gap: 8px; margin-top: -12px;">
 												<MudField Style="flex: 0 0 15%;  background-color: white;" Margin="Margin.Dense" Variant="Variant.Outlined" Label="RootFolder" />
 												<MudTextField Style="flex: 0 0 80%" Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" @bind-Value="@context.RootFolder" />
 												<MudTooltip Text="For Example: d:\Git\Ultra.Resm\, The template is {rootFolder}">

@@ -1,0 +1,338 @@
+﻿@using Monitor.Infra
+@using Montior.Blazor.Data
+@using MudBlazor
+
+<MudCard>
+	<MudTr>
+		
+		<MudIconButton Size="Size.Medium" Icon="@(imagesVariables.ShowImagesVariables == false ? @Icons.Material.Outlined.Image : @Icons.Material.Filled.Image)" Color="@Color.Primary" OnClick="@(() => ShowImagesVariables())" />
+		
+		<td colspan="100">			
+			@if (imagesVariables.ShowImagesVariables)
+			{
+				<MudCard Elevation="0">
+
+					<MudCardHeader>
+						<CardHeaderContent>
+							<MudText Typo="Typo.body1">Artifactory Configuration</MudText>
+						</CardHeaderContent>
+					</MudCardHeader>
+
+					<MudCardContent Class="pa-0">
+						<MudTable Items="@imagesVariables.SourcesVariables" Context="sourcesVarsContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0"
+								  RowEditPreview="SourcesVariablesEdit"
+								  RowEditCommit="SourcesVariablesCommit" Dense="true" Style="background-color: #ADD8E6;">
+							<ColGroup>
+								<col style="width:0px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+							</ColGroup>
+							<HeaderContent>
+								<MudTh />
+								<MudTh><strong>Active</strong></MudTh>
+								<MudTh><strong>UniqueName</strong></MudTh>
+								<MudTh><strong>Url</strong></MudTh>
+								<MudTh><strong>FileNameFilter</strong></MudTh>
+								<MudTh><strong>BranchFilter</strong></MudTh>
+								<MudTh><strong>ExtensionFilter</strong></MudTh>								
+								<MudTh><strong>Description</strong></MudTh>
+							</HeaderContent>
+							<RowTemplate>
+								<MudTd />
+								<MudTd DataLabel="Active">@sourcesVarsContext.Active</MudTd>
+								<MudTd DataLabel="Name">@sourcesVarsContext.UniqueName</MudTd>
+								<MudTd DataLabel="Value">@sourcesVarsContext.Url</MudTd>
+								<MudTd DataLabel="Value">@sourcesVarsContext.FileNameFilter</MudTd>
+								<MudTd DataLabel="Value">@sourcesVarsContext.BranchFilter</MudTd>
+								<MudTd DataLabel="Value">@sourcesVarsContext.ExtensionFilter</MudTd>								
+								<MudTd DataLabel="Value">@sourcesVarsContext.Description</MudTd>
+								<MudTd>
+									<MudIconButton Disabled="@sourceVarDisable" Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveSourcesVarItem(sourcesVarsContext))"></MudIconButton>
+								</MudTd>
+							</RowTemplate>
+							<RowEditingTemplate>
+								<MudTd />
+								<MudTd>
+									<MudCheckBox @bind-Value="@sourcesVarsContext.Active" />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@sourcesVarsContext.UniqueName" Required />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@sourcesVarsContext.Url" />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@sourcesVarsContext.FileNameFilter" />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@sourcesVarsContext.BranchFilter" />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@sourcesVarsContext.ExtensionFilter" />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@sourcesVarsContext.Description" />
+								</MudTd>
+								<MudTd />
+							</RowEditingTemplate>
+						</MudTable>
+					</MudCardContent>
+				</MudCard>
+				<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.Add" Disabled="@sourceVarDisable" OnClick="@(() => { imagesVariables.SourcesVariables.Add(new SourceValue() { Active = false, UniqueName = "uniqueName", Description = ""}); })" />
+
+				<MudCard Elevation="0">
+
+					<MudCardHeader>
+						<CardHeaderContent>
+							<MudText Typo="Typo.body1">Images Configuration</MudText>
+						</CardHeaderContent>
+					</MudCardHeader>
+
+					<MudCardContent Class="pa-0">
+						<MudTable Items="@imagesVariables.SelectedImagesVariables" Context="selectedImagesVarsContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0"
+								  RowEditPreview="ImagesVariablesEdit"
+								  RowEditCommit="ImagesVariablesCommit" Dense="true" Style="background-color: #ADD8E6;" EditTrigger="@TableEditTrigger.EditButton">
+							<ColGroup>
+								<col style="width:0px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:200px;" />
+								<col style="width:400px;" />
+								<col style="width:300px;" />
+								<col style="width:200px;" />
+								<col style="width:0px;" />
+							</ColGroup>
+							<HeaderContent>
+								<MudTh />
+								<MudTh><strong>Active</strong></MudTh>
+								<MudTh><strong>UniqueName</strong></MudTh>
+								<MudTh><strong>SourceUniqueName</strong></MudTh>
+								<MudTh><strong>ZipFileName</strong></MudTh>
+								<MudTh><strong>FullUrl</strong></MudTh>								
+								<MudTh><strong>Description</strong></MudTh>
+								<MudTh />
+							</HeaderContent>
+							<RowTemplate>
+								<MudTd />
+								<MudTd DataLabel="Active">@selectedImagesVarsContext.Active</MudTd>
+								<MudTd DataLabel="Name">@selectedImagesVarsContext.UniqueName</MudTd>
+
+								<MudTd>
+									@* @bind-Value="_selectedItem" *@									
+									 @* @bind-Value="selectedImagesVarsContext.SourceUniqueName" *@
+									@* ValueExpression="() => selectedImagesVarsContext.SourceUniqueName" *@
+									<MudSelect 
+										Style="margin-top: -16px;" 
+										T="string" 
+										Label="" 
+										Value="@selectedImagesVarsContext.SourceUniqueName"
+										ValueChanged="@((newVal) => { OnSourceChanged(selectedImagesVarsContext, newVal); })"
+										
+										OnOpen="@(() => LoadSourcesAsync())">
+										@{
+											if (sourcesOption.Count == 0)
+											{
+												<MudSelectItem Disabled="true" Value="@("Loading...")">Loading...</MudSelectItem>
+											}
+											else
+											{
+												foreach (var item in sourcesOption)
+												{
+													<MudSelectItem Value="@item">@item</MudSelectItem>
+												}
+											}
+										}
+									</MudSelect>
+								</MudTd>
+								@* Value="@(new ZipFileInfo() { FileName = selectedImagesVarsContext.ZipFileName, FullPath = selectedImagesVarsContext.FullUrl })" *@
+								@* <MudTd DataLabel="Value">@selectedImagesVarsContext.ZipFileName</MudTd> *@
+							@* @bind-Value="@selectedImagesVarsContext.ZipFileName" *@
+							@* ValueChanged="@((newVal) => { OnZipFileChanged(selectedImagesVarsContext, newVal); })" *@
+							<MudTd>
+									@* @bind-Value="_selectedItem" *@
+									<MudSelect 
+										Style="margin-top: -16px;"
+										T="UI_ZipFileInfo"
+										@bind-Value="@selectedImagesVarsContext.ZipFileInfo"										
+										Label="" 
+										OnOpen="@(() => LoadItemsAsync(selectedImagesVarsContext))">
+										@{
+											if (selectedImagesVarsContext.PossibleZipFilesInfo.Count == 0)
+											{
+												<MudSelectItem Disabled="true" Value="@(new UI_ZipFileInfo { FileName = "Loading...", FullPath = "" })">Loading...</MudSelectItem>												
+											}
+											else
+											{
+												foreach (var item in selectedImagesVarsContext.PossibleZipFilesInfo)
+												{
+													<MudSelectItem Value="@item">@item.FileName</MudSelectItem>
+												}											
+											}
+
+											if (!selectedImagesVarsContext.PossibleZipFilesInfo.Contains(selectedImagesVarsContext.ZipFileInfo))
+											{
+												<MudSelectItem Value="@selectedImagesVarsContext.ZipFileInfo">@selectedImagesVarsContext.ZipFileInfo.FileName</MudSelectItem>
+											}
+										}
+									</MudSelect>
+								</MudTd>
+								<MudTd DataLabel="Value">@selectedImagesVarsContext.ZipFileInfo.FullPath</MudTd>
+								<MudTd DataLabel="Value">@selectedImagesVarsContext.Description</MudTd>
+								<MudTd>
+									<MudIconButton Disabled="@sourceVarDisable" Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" OnClick="@(() => RemoveImagesVarItem(selectedImagesVarsContext))"></MudIconButton>
+								</MudTd>
+							</RowTemplate>
+							<RowEditingTemplate>
+								<MudTd />
+								<MudTd>
+									<MudCheckBox @bind-Value="@selectedImagesVarsContext.Active" />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@selectedImagesVarsContext.UniqueName" Required />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@selectedImagesVarsContext.SourceUniqueName" ReadOnly/>
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@selectedImagesVarsContext.ZipFileInfo.FileName" ReadOnly/>
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@selectedImagesVarsContext.ZipFileInfo.FullPath" ReadOnly />
+								</MudTd>
+								<MudTd>
+									<MudTextField @bind-Value="@selectedImagesVarsContext.Description" />
+								</MudTd>
+								<MudTd />
+							</RowEditingTemplate>
+						</MudTable>
+					</MudCardContent>
+				</MudCard>
+				<MudIconButton Style="margin-left: 40px;" Icon="@Icons.Material.Filled.Add" Disabled="@imageVarDisable" OnClick="@(() => { imagesVariables.SelectedImagesVariables.Add(new ImageValue() { Active = false, UniqueName = "uniqueName", Description = ""}); })" />
+			}
+		</td>
+	</MudTr>
+</MudCard>
+
+@code
+{
+	[Parameter] public UI_ImagesVariables imagesVariables { get; set; }
+
+	//private List<UI_ZipFileInfo> optionalImagesVariables { get; set; } = new List<UI_ZipFileInfo>();
+	private List<string> sourcesOption = new List<string>();
+
+	private bool sourceVarDisable;
+
+	private void SourcesVariablesEdit(object element)
+	{
+		sourceVarDisable = true;
+		StateHasChanged();
+	}
+
+	private void SourcesVariablesCommit(object element)
+	{
+		sourceVarDisable = false;
+		StateHasChanged();
+	}
+
+	private void RemoveSourcesVarItem(SourceValue keyVal)
+	{
+		imagesVariables.SourcesVariables.Remove(keyVal);
+	}
+
+	private void ShowImagesVariables()
+	{
+		imagesVariables.ShowImagesVariables = !imagesVariables.ShowImagesVariables;
+	}
+
+	private bool imageVarDisable;
+
+	private void ImagesVariablesEdit(object element)
+	{
+		imageVarDisable = true;
+		StateHasChanged();
+	}
+
+	private void ImagesVariablesCommit(object element)
+	{
+		imageVarDisable = false;
+		StateHasChanged();
+	}
+
+	private void RemoveImagesVarItem(ImageValue keyVal)
+	{
+		imagesVariables.SelectedImagesVariables.Remove(keyVal);
+	}
+
+	private async Task LoadItemsAsync(ImageValue imageValue)
+	{
+		imageValue.PossibleZipFilesInfo = new List<UI_ZipFileInfo>();
+
+		await InvokeAsync(StateHasChanged);
+
+		var localOptionalImagesVariables = new List<UI_ZipFileInfo>();
+
+		var sourceInfo = imagesVariables.SourcesVariables.Where(x => x.UniqueName == imageValue.SourceUniqueName).FirstOrDefault();
+		if (sourceInfo != null)
+		{
+			var files = await webFileDownloader.GetFileNamesAsync(sourceInfo.Url, sourceInfo.FileNameFilter, sourceInfo.BranchFilter, sourceInfo.ExtensionFilter);
+
+			if (files != null && files.Count > 0)
+			{ 
+				foreach (var file in files)
+				{
+					localOptionalImagesVariables.Add(new UI_ZipFileInfo() { FileName = file.FileName, FullPath = file.FullPath });
+				}
+			}
+		}
+
+		imageValue.PossibleZipFilesInfo = localOptionalImagesVariables;
+
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task LoadSourcesAsync()
+	{
+		sourcesOption = new List<string>();
+		await InvokeAsync(StateHasChanged);
+
+		var sources = new List<string>();
+
+		if (imagesVariables != null && imagesVariables.SourcesVariables != null)
+			sources = imagesVariables.SourcesVariables.Where(x => x.Active).Select(x => x.UniqueName).ToList();		
+
+		sourcesOption = sources;
+
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private Task OnSourceChanged(ImageValue imageValues, string newValue)
+	{
+		if (imageValues.SourceUniqueName != newValue)
+		{
+			imageValues.SourceUniqueName = newValue;
+
+			if (imageValues.PossibleZipFilesInfo.Count == 0 
+				|| 
+				(!(string.IsNullOrEmpty(imageValues.PossibleZipFilesInfo.Last().FileName)
+				&& 
+				string.IsNullOrEmpty(imageValues.PossibleZipFilesInfo.Last().FullPath))))
+			{
+				imageValues.PossibleZipFilesInfo.Add(new UI_ZipFileInfo());
+			}
+
+			imageValues.ZipFileInfo = imageValues.PossibleZipFilesInfo.Last();
+		}
+
+		StateHasChanged();
+
+		return Task.CompletedTask;
+	}
+
+	private WebFileDownloader webFileDownloader = new WebFileDownloader();
+}
+

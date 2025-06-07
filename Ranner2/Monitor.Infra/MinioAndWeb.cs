@@ -22,7 +22,9 @@ namespace Monitor.Infra
             await UploadFile(minio, "ran", "e.zip", @"C:\GitHub\ToZip\Examples.zip");
             await DownloadFile(minio, "ran", "e.zip", @"C:\GitHub\ToZip\E1.zip");
 
-            ExtractAllFiles(@"C:\GitHub\ToZip\E1.zip", @"C:\GitHub\ToZip\E1");
+            var zipExtractor = new ZipExtractor();
+
+			zipExtractor.ExtractAllFiles(@"C:\GitHub\ToZip\E1.zip", @"C:\GitHub\ToZip\E1");
         }
 
         public async Task UploadFile(IMinioClient minio, string bucketName, string objectName, string fileToUpload)
@@ -59,24 +61,6 @@ namespace Monitor.Infra
             Console.WriteLine("✅ .7z file downloaded.");
         }
 
-        void ExtractAllFiles(string archivePath, string extractPath)
-        {
-            if (!Directory.Exists(extractPath))
-                Directory.CreateDirectory(extractPath);
-
-            using var archive = ArchiveFactory.Open(archivePath);
-            var options = new ExtractionOptions
-            {
-                ExtractFullPath = true,
-                Overwrite = true
-            };
-
-            foreach (var entry in archive.Entries.Where(e => !e.IsDirectory))
-            {
-                entry.WriteToDirectory(extractPath, options);
-            }
-        }
-
         async Task DownloadFromWeb(string fileUrl = "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-large-zip-file.zip")
         {
             string destinationPath = @"C:\GitHub\ToZip\Downloaded.zip";
@@ -91,4 +75,25 @@ namespace Monitor.Infra
             Console.WriteLine("✅ File downloaded successfully.");
         }
     }
+
+    public class ZipExtractor
+    {
+		public void ExtractAllFiles(string archivePath, string extractPath)
+		{
+			if (!Directory.Exists(extractPath))
+				Directory.CreateDirectory(extractPath);
+
+			using var archive = ArchiveFactory.Open(archivePath);
+			var options = new ExtractionOptions
+			{
+				ExtractFullPath = true,
+				Overwrite = true
+			};
+
+			foreach (var entry in archive.Entries.Where(e => !e.IsDirectory))
+			{
+				entry.WriteToDirectory(extractPath, options);
+			}
+		}
+	}
 }

@@ -614,8 +614,7 @@ namespace Monitor.Blazor.Services
 			string settingsJson = File.ReadAllText(path);
 			var instancesDataClone = JsonConvert.DeserializeObject<MonitorPageSettings>(settingsJson);
 
-            if (instancesDataClone.Configuration.Configuration.Count == 0)
-                instancesDataClone.Configuration.Init();
+            instancesDataClone.Configuration.UpgradeIfNeeded();
 
 			var configs = instancesDataClone.Configuration.Configuration.Where(x => x.Active).Reverse().ToList();
             foreach (var config in configs)
@@ -662,14 +661,14 @@ namespace Monitor.Blazor.Services
 							instancesDataClone.InstancesData.Project = config.Value;
 						}
 						break;
-					case UI_Configuration.AutodeploymentMinioIp:
-						break;
-					case UI_Configuration.AutodeploymentMinioPort:
-						break;
-					case UI_Configuration.AutodeploymentMinioUsername:
-						break;
-					case UI_Configuration.AutodeploymentMinioPassword:
-						break;
+					//case UI_Configuration.AutodeploymentMinioIp:
+					//	break;
+					//case UI_Configuration.AutodeploymentMinioPort:
+					//	break;
+					//case UI_Configuration.AutodeploymentMinioUsername:
+					//	break;
+					//case UI_Configuration.AutodeploymentMinioPassword:
+					//	break;
 
 				}
             }
@@ -740,6 +739,8 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
+						lastAppliedSettings.Configuration,
+						lastAppliedSettings.ImagesVariables,
 						lastAppliedSettings.GlobalVariables,
 						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
@@ -791,6 +792,8 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
+						lastAppliedSettings.Configuration,
+						lastAppliedSettings.ImagesVariables,
 						lastAppliedSettings.GlobalVariables,
 						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
@@ -824,6 +827,8 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
+						lastAppliedSettings.Configuration,
+						lastAppliedSettings.ImagesVariables,
 						lastAppliedSettings.GlobalVariables,
 						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
@@ -857,6 +862,8 @@ namespace Monitor.Blazor.Services
 			{
 				var monitorAgentObjects = 
                     CreateMonitorAgentObjects(
+						lastAppliedSettings.Configuration,
+						lastAppliedSettings.ImagesVariables,
 						lastAppliedSettings.GlobalVariables,
 						lastAppliedSettings.GroupTags, 
                         lastAppliedSettings.VmsData, 
@@ -905,7 +912,13 @@ namespace Monitor.Blazor.Services
                     File.WriteAllText(lastConfigFileName, monitorPageSettings.CurrentFileName + ".json");
                 }
 
-                var monitorAgentObjects = CreateMonitorAgentObjects(monitorPageSettings.GlobalVariables, monitorPageSettings.GroupTags, monitorPageSettings.VmsData, monitorPageSettings.InstancesData);
+                var monitorAgentObjects = CreateMonitorAgentObjects(
+					monitorPageSettings.Configuration,
+					monitorPageSettings.ImagesVariables,
+					monitorPageSettings.GlobalVariables, 
+                    monitorPageSettings.GroupTags, 
+                    monitorPageSettings.VmsData, 
+                    monitorPageSettings.InstancesData);
 
                 Task.Run(
                     () =>
@@ -949,6 +962,8 @@ namespace Monitor.Blazor.Services
         }
 
 		private Dictionary<string, Tuple<IpAddress, MonitorAgentSettings>> CreateMonitorAgentObjects(
+			UI_Configuration configurationClone,
+			UI_ImagesVariables imagesVariablesClone,            
 			UI_GlobalVariables globalVariablesClone,
 			UI_GroupTags groupTagsClone,
             UI_VmsData vmsDataClone,
@@ -1010,51 +1025,6 @@ namespace Monitor.Blazor.Services
                 instanceByIdEnvVars[mapped.Key.Id] = mapped.Value.Select(x => new KeyValue() { Key = x.Key, Value = x.ResolvedValue }).ToList();
 
 			#endregion Add Environment Variables Of All Service IPs
-
-			//#region Add Environment Variables Of All Service IPs
-			//
-			//var instanceByIdEnvVars = new Dictionary<int, List<KeyValue>>();
-			//foreach (var instance in instancesDataClone.Instances)
-			//    if (!instanceByIdEnvVars.ContainsKey(instance.Id))
-			//		instanceByIdEnvVars.Add(instance.Id, new List<KeyValue>());
-			//
-			//var servicesNameAndAddress = new List<Tuple<int, string, string, string, bool>>();
-			//var vmsByName = vmsDataClone.VmsDataList.ToDictionary(x => x.UniqueName, x => x);
-			//foreach (var instance in instancesDataClone.Instances)
-			//{
-			//    if (vmsByName.ContainsKey(instance.VmUniqueName) && (!(instance.Disabled || instance.DisabledByGroups)))
-			//        servicesNameAndAddress.Add(Tuple.Create(instance.Id, instance.RestApiPort, instance.Name, vmsByName[instance.VmUniqueName].IpAddress, instance.SupportProberMonitor));
-			//}
-			//
-			//foreach (var instance in instancesDataClone.Instances)
-			//{
-			//	instanceByIdEnvVars[instance.Id].AddRange(instance.ExtraVariables.Select(x => new KeyValue() { Key = x.Key, Value = x.Value }));
-			//
-			//    if (!string.IsNullOrEmpty(instance.Name))
-			//        instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = "Services:MyService:Name", Value = instance.Name });
-			//
-			//    if (!string.IsNullOrEmpty(instance.InstanceId))
-			//		instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = "Services:MyService:InstanceId", Value = instance.InstanceId });
-			//
-			//    if (!string.IsNullOrEmpty(instance.RestApiPort))
-			//    {                    
-			//        instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:MyService:RestApiPort", Value = instance.RestApiPort });
-			//
-			//        _logger.LogInformation($"{instance.Id}: {instanceByIdEnvVars[instance.Id][instanceByIdEnvVars[instance.Id].Count - 1].Key} = {instanceByIdEnvVars[instance.Id][instanceByIdEnvVars[instance.Id].Count - 1].Value}");
-			//	}
-			//
-			//	foreach (var serviceNameAndAddress in servicesNameAndAddress)
-			//    {                    
-			//        instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:Ip", Value = serviceNameAndAddress.Item4 });
-			//        if (!string.IsNullOrEmpty(serviceNameAndAddress.Item2))
-			//        {
-			//            instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:RestApiPort", Value = serviceNameAndAddress.Item2 });
-			//			instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:SupportProberMonitor", Value = serviceNameAndAddress.Item5 ? "true" : "false" });
-			//		}
-			//	}
-			//}
-			//
-			//#endregion Add Environment Variables Of All Service IPs
 
 			var monitorAgentObjects = new Dictionary<string, Tuple<IpAddress, MonitorAgentSettings>>();
 
@@ -1122,22 +1092,61 @@ namespace Monitor.Blazor.Services
 				foreach (var inst in vmSettings.Item2.ProcessInstancesSettings)
 				{
 					if (instancesDataClone.Project != null)
-					{
-						inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
-						inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.ConfigurationTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).Configuration);
-						inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
-						inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
+					{					
+                        {
+                            inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
+                            inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.ConfigurationTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).Configuration);
+                            inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
 
-						inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
-						inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.ConfigurationTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).Configuration);
-						inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
-						inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
+                            inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
+                            inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.ConfigurationTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).Configuration);
+                            inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
 
-						inst.ApplicationFileName = inst.ApplicationFileName.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
+                            inst.ApplicationFileName = inst.ApplicationFileName.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
 
-						inst.CsProj = inst.CsProj.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
-						inst.CsProj = inst.CsProj.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
-						inst.CsProj = inst.CsProj.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
+                            inst.CsProj = inst.CsProj.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
+                            inst.CsProj = inst.CsProj.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
+                        }
+
+						var uiInstance = instancesDataClone.Instances.First(x => x.Id == inst.Id);
+						bool useImaged = false;
+						try
+						{
+							if (uiInstance.UseImage)
+							{
+								var imageInfo = imagesVariablesClone.SelectedImagesVariables.Where(x => x.UniqueName == uiInstance.ImageUniqueName).FirstOrDefault();
+								if (imageInfo != null)
+								{
+									inst.UseImage = true;
+									inst.ZipFileName = imageInfo.ZipFileInfo.FileName;
+									inst.UniqueImageName = uiInstance.ImageUniqueName;
+									inst.FolderToExtract = uiInstance.ImageExtractRootFolder.Replace(UI_InstancesData.ImageFolderTemplateString, Path.GetFileNameWithoutExtension(imageInfo.ZipFileInfo.FileName));
+
+									inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.RootFolderTemplateString, inst.FolderToExtract);
+									inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.RootFolderTemplateString, inst.FolderToExtract);
+									inst.CsProj = inst.CsProj.Replace(UI_InstancesData.RootFolderTemplateString, inst.FolderToExtract);
+
+									var ipAdd = configurationClone.Configuration.Where(x => x.Key == UI_Configuration.RannerMonitorIpAddressForAgents).FirstOrDefault().Value;
+									var portAdd = configurationClone.Configuration.Where(x => x.Key == UI_Configuration.RannerMonitorPortAddressForAgents).FirstOrDefault().Value;
+
+                                    inst.RannerMonitorBaseUrl = $"http://{ipAdd}:{portAdd}";
+
+									useImaged = true;
+								}
+							}
+						}
+						catch (Exception ex)
+						{
+							_logger.LogError(ex.ToString());
+							_logger.LogError($"Failed to use image on instance id {uiInstance.Id} ({uiInstance.Name}) using regular root folder params as a fallback");
+						}
+
+						if (!useImaged)
+                        {
+                            inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
+                            inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
+                            inst.CsProj = inst.CsProj.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
+                        }
 					}
 				}
 			}

@@ -13,6 +13,8 @@
 	<MudCard Class="mt-4">
 		<MudText><strong>Configuration</strong></MudText>
 		<ConfigurationOverride configuration="@configuration" />
+		<MudText><strong>Images</strong></MudText>
+		<Images imagesVariables="@imagesVariables" />
 		<MudText><strong>Groups</strong></MudText>
 		<TagsGroupsTable groupTags="@groupTags"/>
 		<MudText><strong>Global Variables</strong></MudText>
@@ -83,6 +85,7 @@
 				activeConfigurationFileName = monitorAgentService.UserFileClosetAvailableName(p);
 				var settings = monitorAgentService.GetSettingsFromPresetsSettings(p).Clone();
 
+				imagesVariables = settings.ImagesVariables;
 				configuration = settings.Configuration;
 				groupTags = settings.GroupTags;
 				globalVariables = settings.GlobalVariables;
@@ -100,6 +103,7 @@
 	{
 		var settings = monitorAgentService.GetSettingsFromUserSettings(activeConfigurationFileName).Clone();
 
+		imagesVariables = settings.ImagesVariables;
 		configuration = settings.Configuration;
 		groupTags = settings.GroupTags;
 		globalVariables = settings.GlobalVariables;
@@ -202,8 +206,9 @@
 	private void ApplyChanges()
 	{		
 		var monitorPageSettings = new MonitorPageSettings()
-			{
+			{				
 				CurrentFileName = activeConfigurationFileName,
+				ImagesVariables = imagesVariables,
 				Configuration = configuration,
 				InstancesData = instancesData,
 				VmsData = vmsData,
@@ -350,7 +355,19 @@
 				var agentSet = vm.Value;
 				foreach (var app in agentSet.Item2.ProcessInstancesSettings)
 				{
-					var appInst = new List<string>() { { app.Name } };										
+					var appInst = new List<string>() { { app.Name } };															
+					appInst.Add($"Configurations:");
+					appInst.Add($"\tVmUniqueName={app.VmUniqueName}");
+					appInst.Add($"\tApplicationFileName={app.ApplicationFileName}");
+					appInst.Add($"\tApplicationPath={app.ApplicationPath}");
+					appInst.Add($"\tApplicationWorkingDirectory={app.ApplicationWorkingDirectory}");
+					appInst.Add($"\tCsProj={app.CsProj}");
+					appInst.Add($"\tRestApiPor={app.RestApiPort}");
+					appInst.Add($"\tUseImage={app.UseImage}");
+					appInst.Add($"\tZipFileName={app.ZipFileName}");
+					appInst.Add($"\tUniqueImageName={app.UniqueImageName}");
+					appInst.Add($"\tFolderToExtract={app.FolderToExtract}");
+					appInst.Add($"\tRannerMonitorBaseUrl={app.RannerMonitorBaseUrl}");
 					appInst.Add($"Arguments:");
 					appInst.Add($"\t{app.Arguments}");
 					appInst.Add($"EnvVars:");
@@ -398,6 +415,7 @@
 		ApplyChanges();
 	}
 
+	private UI_ImagesVariables imagesVariables { get; set; } = new UI_ImagesVariables();
 	private UI_Configuration configuration { get; set; } = new UI_Configuration();
 	private UI_GlobalVariables globalVariables { get; set; } = new UI_GlobalVariables();
 	private UI_GroupTags groupTags { get; set; } = new UI_GroupTags();
@@ -413,6 +431,7 @@
 
 		var m = monitorAgentService.GetCurrentSettings().Clone();
 
+		imagesVariables = m.ImagesVariables;
 		configuration = m.Configuration;
 		groupTags = m.GroupTags;
 		globalVariables = m.GlobalVariables;
@@ -430,6 +449,7 @@
 
 	private void SettingsChangedFromRestApi(MonitorPageSettings monitorPageSettings)
 	{
+		imagesVariables = monitorPageSettings.ImagesVariables;
 		configuration = monitorPageSettings.Configuration;
 		groupTags = monitorPageSettings.GroupTags;
 		globalVariables = monitorPageSettings.GlobalVariables;
@@ -460,7 +480,9 @@
 				||
 				!lastAppliedSettings.InstancesData.Compare(instancesData))
 				||
-				!lastAppliedSettings.Configuration.Compare(configuration);
+				!lastAppliedSettings.Configuration.Compare(configuration)
+				||
+				!lastAppliedSettings.ImagesVariables.Compare(imagesVariables);
 		}
 		catch (Exception ex)
 		{
@@ -472,7 +494,7 @@
 	{
 		try
 		{
-			UpdateStatus(configuration, groupTags, globalVariables, vmsData, instancesData);
+			UpdateStatus(imagesVariables, configuration, groupTags, globalVariables, vmsData, instancesData);
 			CompareCurrentVsLastApply();
 			InvokeAsync(StateHasChanged);
 		}
@@ -486,7 +508,7 @@
 		}
 	}
 
-	private void UpdateStatus(UI_Configuration configuration, UI_GroupTags groupTags, UI_GlobalVariables globalVariables, UI_VmsData vmsData, UI_InstancesData instancesData)
+	private void UpdateStatus(UI_ImagesVariables imagesVariables, UI_Configuration configuration, UI_GroupTags groupTags, UI_GlobalVariables globalVariables, UI_VmsData vmsData, UI_InstancesData instancesData)
 	{
 		var infos = monitorAgentService.GetAgentsPeriodicInfos();
 
@@ -575,12 +597,14 @@
 
 							if (instData.Value.IsRunning == "Running")
 							{
+								instData.Value.ZipFileName = instStatus.ZipFileName;
 								instData.Value.ProcessName = instStatus.ProcessName;
 								instData.Value.ProcessId = instStatus.ProcessId;
 								instData.Value.RunningFor = instStatus.LastStartTime.HasValue ? DateTime.Now - instStatus.LastStartTime.Value : new TimeSpan(0, 0, 0);
 							}
 							else
 							{
+								instData.Value.ZipFileName = instStatus.ZipFileName;
 								instData.Value.ProcessName = string.Empty;
 								instData.Value.ProcessId = null;
 								instData.Value.RunningFor = new TimeSpan(0, 0, 0);

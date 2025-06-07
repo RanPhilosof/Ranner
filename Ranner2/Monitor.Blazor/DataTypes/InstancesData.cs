@@ -6,6 +6,7 @@ public class UI_InstancesData
 	public const string ConfigurationTemplateString = "{configuration}";
 	public const string RootFolderTemplateString = "{rootFolder}";
 	public const string packageFolderTemplateString = "{packageFolder}";
+	public const string ImageFolderTemplateString = "{imageFolder}";
 
 	public List<string> PossibleProjects { get; set; } = new List<string>();
 	public string Project { get; set; } = string.Empty;
@@ -72,6 +73,8 @@ public class UI_Instance
 
 	#region Monitored Data - Readonly
 	[Newtonsoft.Json.JsonIgnore]
+	public string ZipFileName { get; set; } = string.Empty;
+	[Newtonsoft.Json.JsonIgnore]
 	public string ProcessName { get; set; } = string.Empty;
 	[Newtonsoft.Json.JsonIgnore]
 	public string IsRunning { get; set; } = "Unknown";
@@ -83,7 +86,10 @@ public class UI_Instance
     #endregion Basic Table
     
     public bool ShowAdvancedConfigurations { get; set; }
-    public string RootFolder { get; set; } = string.Empty;
+	public string ImageUniqueName { get; set; } = string.Empty;
+	public string ImageExtractRootFolder { get; set; } = string.Empty;
+	public bool UseImage { get; set; } = false;
+	public string RootFolder { get; set; } = string.Empty;
 	public string PackageFolder { get; set; } = string.Empty;
 	public string Configuration { get; set; } = string.Empty;
     public string Arguments { get; set; } = string.Empty;
@@ -123,6 +129,13 @@ public class UI_Instance
 		if (RunOrStop != other.RunOrStop)
 			return false;
 		if (StartDelayTime_mSec != other.StartDelayTime_mSec)
+			return false;
+
+		if (ImageExtractRootFolder != other.ImageExtractRootFolder)
+			return false;
+		if (ImageUniqueName != other.ImageUniqueName) 
+			return false;
+		if (UseImage != other.UseImage)
 			return false;
 
 		if (RootFolder != other.RootFolder)
