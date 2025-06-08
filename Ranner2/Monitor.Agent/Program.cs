@@ -2,8 +2,10 @@ using AppMonitoring.SharedTypes;
 using CommandLine;
 using Monitor.Agent.Services;
 using Monitor.Infra;
+using Monitor.Infra.LogSink;
 using Monitor.SharedTypes;
 using Serilog;
+using System.Collections.Concurrent;
 using ILogger = Serilog.ILogger;
 
 if (!DebugerChecker.IsDebug && Environment.UserInteractive)
@@ -26,6 +28,8 @@ var loggerFilePath = "logs/agent.log";
 if (!string.IsNullOrEmpty(parsedArgs?.Value?.LoggerFilePath))
 	loggerFilePath = parsedArgs.Value.LoggerFilePath;
 
+var logQueue = new ConcurrentQueue<LogInfo>();
+
 Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
                                           .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
                                           .WriteTo.Console()
@@ -36,8 +40,8 @@ Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
                                                   retainedFileCountLimit:5,
                                                   rollOnFileSizeLimit: true, // start new file when limit reached
                                                   shared: false,
-                                                  flushToDiskInterval: TimeSpan.FromSeconds(5)
-                                                  ).CreateLogger();
+                                                  flushToDiskInterval: TimeSpan.FromSeconds(5))
+                                          .WriteTo.Sink(new ConcurrentQueueLogSink(logQueue, 10_000)).CreateLogger();
 
 #if (RELEASE)
 {
@@ -62,6 +66,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 //builder.Services.AddSingleton(logger);
 builder.Services.AddSingleton<IMonitorAgentService, VmService>();
+builder.Services.AddSingleton(logQueue);
+
 
 WebApplication app = builder.Build();
 

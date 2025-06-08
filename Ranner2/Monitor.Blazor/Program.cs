@@ -3,10 +3,12 @@ using CommandLine;
 using Monitor.Blazor.Interfaces;
 using Monitor.Blazor.Services;
 using Monitor.Infra;
+using Monitor.Infra.LogSink;
 using Monitor.Services;
 using Monitor.SharedTypes;
 using MudBlazor.Services;
 using Serilog;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -28,6 +30,8 @@ var loggerFilePath = "logs/ui.log";
 if (!string.IsNullOrEmpty(parsedArgs?.Value?.LoggerFilePath))
 	loggerFilePath = parsedArgs.Value.LoggerFilePath;
 
+var logQueue = new ConcurrentQueue<LogInfo>();
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
 										  .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
@@ -39,8 +43,9 @@ Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
                                                   retainedFileCountLimit:5,
                                                   rollOnFileSizeLimit: true, // start new file when limit reached
                                                   shared: false,
-                                                  flushToDiskInterval: TimeSpan.FromSeconds(5)
-                                                  ).CreateLogger();
+                                                  flushToDiskInterval: TimeSpan.FromSeconds(5))
+										  .WriteTo.Sink(new ConcurrentQueueLogSink(logQueue, 10_000))
+										  .CreateLogger();
 
 #if (RELEASE)
 {
@@ -74,6 +79,8 @@ builder.Services.AddMudServices();
 builder.Services.AddSingleton<IMonitorService, MonitorAgentService>();
 builder.Services.AddSingleton<IMonitorAgentCommunicationLayer, MonitorAgentCommunicationLayer>();
 builder.Services.AddSingleton<IConsoleRunnerService, ConsoleRunnerServier>();
+builder.Services.AddSingleton<ILoggingService, LoggingService>();
+builder.Services.AddSingleton(logQueue);
 
 builder.Services.AddControllers();
 

@@ -1,6 +1,8 @@
 using AppMonitoring.SharedTypes;
 using Microsoft.AspNetCore.Mvc;
 using Monitor.Agent.Services;
+using Monitor.Infra.LogSink;
+using System.Collections.Concurrent;
 
 namespace Monitor.Agent.Controllers
 {
@@ -10,8 +12,14 @@ namespace Monitor.Agent.Controllers
     {
         private IMonitorAgentService _monitorAgentService;
 		private ILogger<MonitorAgentController> _logger;
-        public MonitorAgentController(IMonitorAgentService monitorAgentService, ILogger<MonitorAgentController> logger)
+        private ConcurrentQueue<LogInfo> _logsQueue;
+
+        public MonitorAgentController(
+            IMonitorAgentService monitorAgentService, 
+            ILogger<MonitorAgentController> logger,
+            ConcurrentQueue<LogInfo> logsQueue)
         {
+            _logsQueue = logsQueue;
             _logger = logger;
             _monitorAgentService = monitorAgentService;
         }
@@ -79,6 +87,18 @@ namespace Monitor.Agent.Controllers
 			_monitorAgentService.InvokeCompile(id, configuration);
 
 			return Ok();
-		}		
-	}
+		}
+
+        [HttpGet(Name = "GetLogs")]
+        public ActionResult<List<LogInfo>> GetLogs()
+        {
+            var logs = new List<LogInfo>();
+            var logsCount = _logsQueue.Count;
+            for (int i = 0; i < logsCount; i++)
+                if (_logsQueue.TryDequeue(out var log))
+                    logs.Add(log);
+
+            return new ActionResult<List<LogInfo>>(logs);
+        }
+    }
 }

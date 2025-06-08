@@ -1,0 +1,325 @@
+﻿@using Microsoft.JSInterop
+@using Monitor.Blazor.Services
+@inject IJSRuntime JS
+@inject ILoggingService loggingService
+
+<MudButton Variant="@(hasNewLogs ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" OnClick="@ToggleLogPopup">Logs</MudButton>
+@* <button class="btn mb-2 @(hasNewLogs ? "btn-danger" : "btn-secondary")" @onclick="ToggleLogPopup">
+    Show Console Logs
+</button> *@
+
+@if (logPopupVisible)
+{
+    <div class="modal d-block draggable-modal" tabindex="-1" @ref="draggableModalRef">
+        <div class="modal-dialog" style="width: 70vw; max-width: none;">
+            <div class="modal-content resizable-box">
+                <div class="modal-header">
+                    <h5 class="modal-title">Console Logs (Live)</h5>
+                    <button type="button" class="btn-close" @onclick="ToggleLogPopup"></button>
+                </div>
+                <div class="modal-body" style="overflow-y: auto; flex-grow: 1;" data-log-container>
+                    <div style="min-height: 400px;">
+                        @if (!liveLogs.Any())
+                        {
+                            <em>No logs yet.</em>
+                        }
+                        else
+                        {
+                            <table class="table table-sm table-striped log-table" style="font-family: monospace;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">#</th>
+                                        <th>Log</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var line in liveLogs.Select((text, i) => new { text, i }))
+                                    {
+                                        <tr class="log-line" data-log-id="@line.text.Item1" onclick="selectText(this, event)">
+
+                                            <td>@(@line.text.Item1)</td>  <!-- Global Line Count -->
+                                            <td><code id="log-line-@line.i">@line.text.Item2</code></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-primary me-2" @onclick="ClearLogs">Clear Logs</button>
+                    <button class="btn btn-outline-primary me-2" @onclick="ToggleAutoScroll">
+                        @(autoScrollEnabled ? "Pause Auto-Scroll" : "Resume Auto-Scroll")
+                    </button>
+                    <button class="btn btn-secondary" @onclick="ToggleLogPopup">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .log-line td code {
+        display: block;
+        white-space: pre-wrap;
+        overflow: hidden;
+        max-height: 2.8em;
+        line-height: 1.4em;
+        text-overflow: ellipsis;
+    }
+
+    .log-line.highlighted td code {
+        background-color: #f0f8ff !important;
+        border-left: 4px solid #007bff;
+        max-height: none;
+        overflow: visible;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+        table thead th {
+            position: sticky;
+            top: 0;
+            background-color: white; /* ensures header is opaque */
+            z-index: 2;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+            padding: 8px 12px;
+        }
+
+    .modal-content {
+        display: flex;
+        flex-direction: column;
+        height: 80vh;
+    }
+
+    .modal-body[data-log-container] {
+        flex-grow: 1;
+        overflow: hidden;
+        padding: 0;
+    }
+
+    .log-table-container {
+        height: 100%;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    table.log-table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+        table.log-table thead th {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 10;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+            padding: 8px 12px;
+        }
+</style>
+
+<script>
+    function scrollToLastLogLine() {
+        const container = document.querySelector('[data-log-container]');
+        const logs = container?.querySelectorAll('[id^="log-line-"]');
+        if (logs?.length > 0) {
+            const lastLog = logs[logs.length - 1];
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+</script>
+
+<script>
+    window.selectedLogIds = window.selectedLogIds || new Set(); // Global storage
+    window.lastSelectedId = window.lastSelectedId || null;
+
+    //let selectedLogIds = new Set(); // Store globally selected log IDs
+    //let lastSelectedId = null;
+
+    function selectText(row, event) {
+        const id = row.getAttribute('data-log-id');
+        const allRows = Array.from(document.querySelectorAll('.log-line'));
+
+        if (event.shiftKey && lastSelectedId) {
+            const rows = allRows.map(r => ({
+                id: r.getAttribute('data-log-id'),
+                el: r
+            }));
+
+            const startIndex = rows.findIndex(r => r.id === lastSelectedId);
+            const endIndex = rows.findIndex(r => r.id === id);
+            const [start, end] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+
+            selectedLogIds.clear();
+            for (let i = start; i <= end; i++) {
+                rows[i].el.classList.add('highlighted');
+                selectedLogIds.add(rows[i].id);
+            }
+        } else {
+            if (selectedLogIds.has(id)) {
+                selectedLogIds.delete(id);
+                row.classList.remove('highlighted');
+            } else {
+                selectedLogIds.clear();
+                allRows.forEach(r => r.classList.remove('highlighted'));
+                row.classList.add('highlighted');
+                selectedLogIds.add(id);
+            }
+        }
+
+        lastSelectedId = id;
+    }
+
+    function resetHighlights() {
+        const allRows = document.querySelectorAll('.log-line');
+        allRows.forEach(row => {
+            const id = row.getAttribute('data-log-id');
+            if (selectedLogIds.has(id)) {
+                row.classList.add('highlighted');
+            } else {
+                row.classList.remove('highlighted');
+            }
+        });
+    }
+
+    document.addEventListener('mousedown', function (e) {
+        if (e.target.closest('.log-line')) {
+            e.preventDefault();
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.ctrlKey && e.key === 'c') {
+            const selectedRows = document.querySelectorAll('.log-line.highlighted code');
+            if (selectedRows.length > 0) {
+                const text = Array.from(selectedRows).map(el => el.textContent).join('\n');
+                navigator.clipboard.writeText(text).catch(console.error);
+                e.preventDefault();
+            }
+        }
+
+        if (e.ctrlKey && e.key === 'a') {
+            const allRows = document.querySelectorAll('.log-line');
+            allRows.forEach(row => {
+                const id = row.getAttribute('data-log-id');
+                row.classList.add('highlighted');
+                selectedLogIds.add(id);
+            });
+            e.preventDefault();
+        }
+    });
+    function resetHighlights() {
+        const allRows = document.querySelectorAll('.log-line');
+        const stillValidIds = new Set();
+
+        allRows.forEach(row => {
+            const id = row.getAttribute('data-log-id');
+            if (selectedLogIds.has(id)) {
+                row.classList.add('highlighted');
+                stillValidIds.add(id); // only keep what's still present
+            } else {
+                row.classList.remove('highlighted');
+            }
+        });
+
+        // Remove stale IDs from the set
+        selectedLogIds = stillValidIds;
+    }
+</script>
+
+@code {
+    private bool hasNewLogs => currentLogSequence > lastSeenLogSequence;
+    private long lastSeenLogSequence = 0;
+    private long currentLogSequence = 0;
+    private bool logPopupVisible = false;
+    private bool autoScrollEnabled = true;
+    private ElementReference draggableModalRef;
+    private List<Tuple<long, string>> liveLogs = new();
+    private Timer? logCheckTimer;
+    private bool initialized = false;
+    private int maxLogsToKeep = 1_000;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !initialized)
+        {
+            initialized = true;           
+            StartLogWatcher();
+        }
+    }
+
+    private void StartLogWatcher()
+    {
+        logCheckTimer = new Timer(_ =>
+        {
+            var seq = loggingService.CurrentLogSequence;
+            if (seq != currentLogSequence)
+            {
+                currentLogSequence = seq;
+                InvokeAsync(StateHasChanged);
+            }
+        }, null, 0, 1000);
+    }
+
+    private void ClearLogs()
+    {
+        lock (liveLogs)
+            liveLogs.Clear();
+    }
+
+    private async Task ToggleLogPopup()
+    {
+        logPopupVisible = !logPopupVisible;
+
+        if (logPopupVisible)
+        {
+            await FetchAndAppendLogsPeriodically();
+        }
+    }
+
+    private async Task FetchAndAppendLogsPeriodically()
+    {
+        while (logPopupVisible)
+        {
+            var logs = loggingService.GetLogHistoryAndClear();
+            if (logs.Any())
+            {
+                lock (liveLogs)
+                {
+                    liveLogs.AddRange(logs);
+                    if (liveLogs.Count > maxLogsToKeep)
+                        liveLogs.RemoveRange(0, liveLogs.Count - maxLogsToKeep);
+                }
+
+                StateHasChanged();
+                await JS.InvokeVoidAsync("resetHighlights");
+
+                await ScrollToBottom();
+                lastSeenLogSequence = loggingService.CurrentLogSequence;
+            }
+
+            await Task.Delay(1000);
+        }
+    }
+    
+    private async Task SelectLogLine(int index)
+    {
+        await JS.InvokeVoidAsync("selectTextById", $"log-line-{index}");
+    }
+
+    private void ToggleAutoScroll()
+    {
+        autoScrollEnabled = !autoScrollEnabled;
+    }
+
+    private async Task ScrollToBottom()
+    {
+        if (autoScrollEnabled)
+            await JS.InvokeVoidAsync("scrollToLastLogLine");
+    }
+}

@@ -1,13 +1,16 @@
 using AppMonitoring.SharedTypes;
 using CommandLine;
+using Microsoft.AspNetCore.Mvc;
 using Monitor.Blazor.Converters;
 using Monitor.Blazor.Interfaces;
 using Monitor.Infra;
+using Monitor.Infra.LogSink;
 using Montior.Blazor.Data;
 using MudBlazor;
 using MudBlazor.Extensions;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -67,12 +70,16 @@ namespace Monitor.Blazor.Services
 	{
 		private Timer updateTimer;
 		private int fetchInfoFromAgentsTimerTimeInterval_mSec = 5000;
-
-		public MonitorAgentService(ILogger<MonitorAgentService> logger)
+        private ConcurrentQueue<LogInfo> _logsQueue;
+		public MonitorAgentService(
+            ILogger<MonitorAgentService> logger,
+			ConcurrentQueue<LogInfo> logsQueue)
         {
-			//Debugger.Launch();
+            //Debugger.Launch();
 
-	        _logger = logger;
+            _logsQueue = logsQueue;
+
+			_logger = logger;
 
 			var parsedArgs = Parser.Default.ParseArguments<BlazorOptions>(Environment.GetCommandLineArgs());
 
@@ -481,6 +488,7 @@ namespace Monitor.Blazor.Services
 		public Action<IpAddress, CompileInfo> SetCompilerRequestHandler { get; set; }
 		public Action<IpAddress, MonitorAgentSettings> SetMonitorAgentSettingsHandler { get; set; }
 		public Func<IpAddress, Tuple<VmInfo, List<ProcessInstanceInfo>>> GetVmInfoAndListProcessInstaceInfoHandler { get; set; }
+        public Func<IpAddress, List<LogInfo>> GetVmLogsHandler { get; set; }
         public Action<IpAddress, GenericCommand> GenericCommandHandler { get; set; }
 		#endregion Event Driven Triggers
 
@@ -488,6 +496,11 @@ namespace Monitor.Blazor.Services
         {
             return GetVmInfoAndListProcessInstaceInfoHandler?.Invoke(ipAddress);
 		}
+
+        public List<LogInfo> GetVmLogs(IpAddress ipAddress)
+        {
+            return GetVmLogsHandler?.Invoke(ipAddress);
+        }
 
         public Dictionary<string, Tuple<VmInfo, Dictionary<int, ProcessInstanceInfo>>> GetAgentsPeriodicInfos()
         {
@@ -509,7 +522,45 @@ namespace Monitor.Blazor.Services
 			}
 		}
 
-		public void UpdateAgentsPeriodicInfos()
+        public List<LogInfo> GetCurrentLogs()
+        {
+            var logs = new List<LogInfo>();
+
+			var logsCount = _logsQueue.Count;
+			for (int i = 0; i < logsCount; i++)
+				if (_logsQueue.TryDequeue(out var log))
+					logs.Add(log);
+
+			return logs;
+		}
+
+        public List<Tuple<string, List<LogInfo>>> GetAllVmsLogs()
+        {
+            var logs = new List<Tuple<string, List<LogInfo>>>();
+
+            var lAppliedSettings = GetCurrentSettings();
+
+            foreach (var vm in lAppliedSettings.VmsData.VmsDataList.Select(x => new { vmName = x.UniqueName, ipAdd = new IpAddress() { Ip = x.IpAddress, Port = x.Port } }))
+            {
+                try
+                {
+                    var vLogs = new List<LogInfo>();
+                    var v = GetVmLogs(vm.ipAdd);
+                    vLogs.AddRange(v);
+                    var vmLogs = Tuple.Create(vm.vmName, vLogs);
+                    
+                    logs.Add(vmLogs);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogInformation(ex.ToString());
+                }
+            }
+
+            return logs;
+        }
+
+        public void UpdateAgentsPeriodicInfos()
         {
             var lAppliedSettings = GetCurrentSettings();
 

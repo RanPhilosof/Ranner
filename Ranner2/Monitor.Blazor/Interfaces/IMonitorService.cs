@@ -1,4 +1,5 @@
 ﻿using AppMonitoring.SharedTypes;
+using Monitor.Infra.LogSink;
 using Montior.Blazor.Data;
 using Newtonsoft.Json;
 using System.Net;
@@ -41,6 +42,8 @@ namespace Monitor.Blazor.Interfaces
 
 		event Action<MonitorPageSettings> SettingsChangedFromRestApi;
 		Dictionary<string, Tuple<VmInfo, Dictionary<int, ProcessInstanceInfo>>> GetAgentsPeriodicInfos();
+
+		List<LogInfo> GetCurrentLogs();
 	}
 
     public interface IMonitorHandlingAgents
@@ -49,9 +52,12 @@ namespace Monitor.Blazor.Interfaces
 		void SetCompilerRequest(IpAddress ipAddress, CompileInfo compileInfo);
 		void SetMonitorAgentSettings(IpAddress ipAddress, MonitorAgentSettings monitorAgentSettings);
 		Tuple<VmInfo, List<ProcessInstanceInfo>> GetVmInfoAndListProcessInstaceInfo(IpAddress ipAddress);
+		List<Tuple<string, List<LogInfo>>> GetAllVmsLogs();		
+
 		Action<IpAddress, MonitorAgentSettings> SetMonitorAgentSettingsHandler { get; set; }
 		Func<IpAddress, Tuple<VmInfo, List<ProcessInstanceInfo>>> GetVmInfoAndListProcessInstaceInfoHandler { get; set; }
-		Action<IpAddress, CompileInfo> SetCompilerRequestHandler { get; set; }
+        Func<IpAddress, List<LogInfo>> GetVmLogsHandler { get; set; }
+        Action<IpAddress, CompileInfo> SetCompilerRequestHandler { get; set; }
 		Action<IpAddress, GenericCommand> GenericCommandHandler { get; set; }
 	}
 

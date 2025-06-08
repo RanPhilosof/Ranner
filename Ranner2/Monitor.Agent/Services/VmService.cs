@@ -1,5 +1,7 @@
 ﻿using AppMonitoring.SharedTypes;
+using CircularBuffer;
 using CommandLine;
+using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Monitor.Infra;
 using Newtonsoft.Json;
@@ -36,7 +38,7 @@ namespace Monitor.Agent.Services
         #region C'tors
         public VmService(ILogger<VmService> logger)
         {
-            _logger = logger;
+            _logger = logger;            
 
             try
             {
@@ -292,10 +294,10 @@ namespace Monitor.Agent.Services
                 timer.Change(100, Timeout.Infinite);
             }
 		}
-		#endregion Interface IMonitorAgentService
+        #endregion Interface IMonitorAgentService
 
-		#region Private Methods - Main Loop
-		private object oneLoopCycleLocker = new object();
+        #region Private Methods - Main Loop
+        private object oneLoopCycleLocker = new object();
         private bool aboutTime = false;
 
 		private void OneLoopCycleWrapper(object obj)

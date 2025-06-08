@@ -27,15 +27,21 @@
 	<MudStack Row="true">
 		<MudPaper Class="pa-4 mt-4">
 			<MudCard Class="mt-4" Style="display: flex; justify-content: space-between;">
+				<LogsView/>
 				<MudButton Variant="@(applyButtonVariant ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" OnClick="@ApplyChanges">Apply Changes</MudButton>
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@KillAll">Kill All</MudButton>
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@StartAll">Start All</MudButton>							
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@CompileAll">Compile All</MudButton>
-				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@GetAllArgs">Get All Args</MudButton>
-				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@ToggleDebugRelease">~Dbg/Rls All</MudButton>
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@GetAllArgs">Get All Args</MudButton>			
 			</MudCard>
 		</MudPaper>
 	
+		<MudPaper Class="pa-4 mt-4">
+			<MudCard Class="mt-4" Style="display: flex; justify-content: space-between;">
+				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@ToggleDebugRelease">~Dbg/Rls All</MudButton>
+			</MudCard>
+		</MudPaper>
+
 		<MudPaper Class="pa-4 mt-4">
 			<MudCard Class="mt-4" Style="display: flex; justify-content: space-between;">
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Save">Save...</MudButton>
