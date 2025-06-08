@@ -68,6 +68,78 @@ namespace Monitor.Blazor.Interfaces
         List<string> GetAllCsprojs();
         List<string> GetAllCsprojForBuild();
         List<string> GetAllCsProjForPublish();
-        List<string> GetAllDeployedFoldersToCopy();		
+        List<string> GetAllDeployedFoldersToCopy();
+
+        public static MonitorPageSettings GetSettingsFromFullPath(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException($"File {fullPath} doesn't exist");
+            }
+            string settingsJson = File.ReadAllText(path);
+            var instancesDataClone = JsonConvert.DeserializeObject<MonitorPageSettings>(settingsJson);
+
+            instancesDataClone.Configuration.UpgradeIfNeeded();
+
+            var configs = instancesDataClone.Configuration.Configuration.Where(x => x.Active).Reverse().ToList();
+            foreach (var config in configs)
+            {
+                switch (config.Key)
+                {
+                    case UI_Configuration.ForceStartAllOnLoad:
+                        {
+                            foreach (var app in instancesDataClone.InstancesData.Instances)
+                            {
+                                if (app.DisabledByGroups || app.Disabled)
+                                    app.RunOrStop = false;
+                                else
+                                    app.RunOrStop = bool.Parse(config.Value);
+                            }
+                        }
+                        break;
+                    case UI_Configuration.ForceActiveGroupsOnLoad:
+                        {
+                            instancesDataClone.InstancesData.ActiveGroups = config.Value;
+                            instancesDataClone.InstancesData.UpdateDisableStateByGroups();
+                        }
+                        break;
+                    case UI_Configuration.ForceConfigurationOnLoad:
+                        {
+                            foreach (var app in instancesDataClone.InstancesData.Instances)
+                            {
+                                app.Configuration = config.Value;
+
+                                if (app.ApplicationWorkingDirectory.ToLowerInvariant().Contains("blazor")
+                                    ||
+                                    app.ApplicationPath.ToLowerInvariant().Contains("blazor")
+                                    ||
+                                    app.Name.ToLowerInvariant().Contains("blazor"))
+                                {
+                                    if (config.Value.ToLowerInvariant() == "release")
+                                        app.Configuration = "Publish";
+                                }
+                            }
+                        }
+                        break;
+                    case UI_Configuration.ForceProjectOnLoad:
+                        {
+                            instancesDataClone.InstancesData.Project = config.Value;
+                        }
+                        break;
+                        //case UI_Configuration.AutodeploymentMinioIp:
+                        //	break;
+                        //case UI_Configuration.AutodeploymentMinioPort:
+                        //	break;
+                        //case UI_Configuration.AutodeploymentMinioUsername:
+                        //	break;
+                        //case UI_Configuration.AutodeploymentMinioPassword:
+                        //	break;
+
+                }
+            }
+
+            return instancesDataClone;
+        }
     }
 }

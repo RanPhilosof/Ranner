@@ -1,5 +1,4 @@
 ﻿using AppMonitoring.SharedTypes;
-using CircularBuffer;
 using CommandLine;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
