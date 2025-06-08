@@ -9,8 +9,8 @@
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
-<MudGrid>
-	<MudCard Class="mt-4">
+<MudGrid >
+	<MudCard Class="mt-4" Style="width: 98vw; padding-left: 20px; padding-right: 20px;">
 		<MudText><strong>Configuration</strong></MudText>
 		<ConfigurationOverride configuration="@configuration" />
 		<MudText><strong>Images</strong></MudText>
@@ -36,16 +36,9 @@
 			</MudCard>
 		</MudPaper>
 	
-@* 		<MudPaper Class="pa-4 mt-4">
-			<MudCard Style="display: flex; justify-content: space-between;">
-				<MudButton Class="mt-sm-2" Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Compile" Style="height: 40px; line-height: 40px;">Compile</MudButton>
-				<MudTextField @bind-Value="compileInstanceId" Label="Instaces Id" Variant="Variant.Outlined" Style="margin-top: 2px; height: 40px; line-height: 40px;"></MudTextField>
-			</MudCard>
-		</MudPaper> *@
 		<MudPaper Class="pa-4 mt-4">
 			<MudCard Class="mt-4" Style="display: flex; justify-content: space-between;">
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Save">Save...</MudButton>
-				@* <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@(() => {})">Save as...</MudButton> *@
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Load">Load...</MudButton>
 			</MudCard>		
 		</MudPaper>
@@ -67,6 +60,16 @@
 	</MudStack>
 </MudGrid>
 
+<style>
+	.custom-gray-button {
+		color: #1E88E5;
+		border-color: #1E88E5;
+	}
+
+	.custom-gray-button:hover {
+		background-color: #e0e0e0;
+	}
+</style>
 
 @code
 {
