@@ -25,6 +25,13 @@
                         }
                         else
                         {
+                            <div class="px-3 py-2">
+                                <input type="text"
+                                       @bind="filterText"
+                                       @bind:event="oninput"
+                                       class="form-control"
+                                       placeholder="Filter logs by keyword..." />
+                            </div>
                             <table class="table table-sm table-striped log-table" style="font-family: monospace;">
                                 <thead>
                                     <tr>
@@ -33,7 +40,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var line in liveLogs.Select((text, i) => new { text, i }))
+                                    @foreach (var line in FilteredLogs.Select((text, i) => new { text, i }))
                                     {
                                         <tr class="log-line" data-log-id="@line.text.Item1" onclick="selectText(this, event)">
 
@@ -243,6 +250,12 @@
     private bool initialized = false;
     private int maxLogsToKeep = 1_000;
 
+    private string filterText = string.Empty;
+
+    private IEnumerable<Tuple<long, string>> FilteredLogs =>
+        string.IsNullOrWhiteSpace(filterText)
+            ? liveLogs
+            : liveLogs.Where(log => log.Item2.Contains(filterText, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
