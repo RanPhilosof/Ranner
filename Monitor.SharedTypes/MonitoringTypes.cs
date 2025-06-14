@@ -129,7 +129,13 @@ namespace AppMonitoring.SharedTypes
 		public string InstanceId { get; set; } = string.Empty;
         public string Arguments { get; set; } = string.Empty;
 
-        public List<Tuple<string, string>> Variables { get; set; } = new List<Tuple<string, string>>();
+		public bool UseImage { get; set; } = false;
+        public string ZipFileName { get; set; } = string.Empty;
+		public string UniqueImageName { get; set; } = string.Empty;
+		public string FolderToExtract { get; set; } = string.Empty;
+		public string RannerMonitorBaseUrl { get; set; } = string.Empty;
+
+		public List<Tuple<string, string>> Variables { get; set; } = new List<Tuple<string, string>>();
         
         #endregion Process Info
 
@@ -146,8 +152,13 @@ namespace AppMonitoring.SharedTypes
             if (InstanceId != other.InstanceId) return false;
             if (Arguments != other.Arguments) return false;
             if (!Variables.Compare(other.Variables)) return false;
+            if (UseImage != other.UseImage) return false;
+			if (ZipFileName != other.ZipFileName) return false;
+			if (UniqueImageName != other.UniqueImageName) return false;
+			if (FolderToExtract != other.FolderToExtract) return false;
+            if (RannerMonitorBaseUrl != other.RannerMonitorBaseUrl) return false;
 
-            return true;
+			return true;
         }
     }
 
@@ -187,9 +198,11 @@ namespace AppMonitoring.SharedTypes
         public bool IsRunning { get; set; }
         public DateTime? LastStartTime { get; set; }        
         public int? ProcessId { get; set; }
-        #endregion Process Instance Info
 
-        public ProcessInstanceInfo Clone()
+        public string ZipFileName { get; set; } = string.Empty;
+		#endregion Process Instance Info
+
+		public ProcessInstanceInfo Clone()
         {
             var clone = new ProcessInstanceInfo(null);
 
@@ -198,6 +211,7 @@ namespace AppMonitoring.SharedTypes
             clone.LastStartTime = LastStartTime;
             clone.ProcessId = ProcessId;
             clone.ProcessName = ProcessName;
+            clone.ZipFileName = ZipFileName;
 
             clone.IsCompiling = IsCompiling;
 

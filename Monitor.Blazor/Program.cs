@@ -1,17 +1,42 @@
+using AppMonitoring.SharedTypes;
+using Blazored.LocalStorage;
 using CommandLine;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Monitor.Blazor.Interfaces;
 using Monitor.Blazor.Services;
+using Monitor.Infra;
+using Monitor.Infra.LogSink;
 using Monitor.Services;
+using Monitor.SharedTypes;
 using MudBlazor.Services;
 using Serilog;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Reflection;
+using System;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+
+
+if (!DebugerChecker.IsDebug && Environment.UserInteractive)
+{
+	WindowsServiceHandler.Stop("Monitor_Blazor");
+    WindowsServiceHandler.Delete("Monitor_Blazor");
+    WindowsServiceHandler.Create("Monitor_Blazor", System.Environment.ProcessPath);
+    WindowsServiceHandler.Start("Monitor_Blazor");
+
+    return;
+}
+
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
 
 var parsedArgs = Parser.Default.ParseArguments<BlazorOptions>(Environment.GetCommandLineArgs());
 
 var loggerFilePath = "logs/ui.log";
 if (!string.IsNullOrEmpty(parsedArgs?.Value?.LoggerFilePath))
 	loggerFilePath = parsedArgs.Value.LoggerFilePath;
+
+var logQueue = new ConcurrentQueue<LogInfo>();
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
@@ -24,8 +49,9 @@ Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
                                                   retainedFileCountLimit:5,
                                                   rollOnFileSizeLimit: true, // start new file when limit reached
                                                   shared: false,
-                                                  flushToDiskInterval: TimeSpan.FromSeconds(5)
-                                                  ).CreateLogger();
+                                                  flushToDiskInterval: TimeSpan.FromSeconds(5))
+										  .WriteTo.Sink(new ConcurrentQueueLogSink(logQueue, 10_000))
+										  .CreateLogger();
 
 #if (RELEASE)
 {
@@ -40,6 +66,7 @@ Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
 
 //use serilog
 builder.Host.UseSerilog();
+builder.Host.UseWindowsService();
 
 builder.Services.AddCors(options =>
 {
@@ -52,12 +79,16 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
+builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 builder.Services.AddSingleton<IMonitorService, MonitorAgentService>();
 builder.Services.AddSingleton<IMonitorAgentCommunicationLayer, MonitorAgentCommunicationLayer>();
 builder.Services.AddSingleton<IConsoleRunnerService, ConsoleRunnerServier>();
+builder.Services.AddSingleton<ILoggingService, LoggingService>();
+builder.Services.AddSingleton(logQueue);
+
 
 builder.Services.AddControllers();
 
@@ -74,7 +105,7 @@ if (!app.Environment.IsDevelopment())
 	// The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
 	app.UseHsts();
 }
-else
+//else
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
@@ -86,44 +117,6 @@ app.Services.GetService<IMonitorService>();
 app.Services.GetService<IMonitorAgentCommunicationLayer>();
 app.Services.GetService<IConsoleRunnerService>();
 
-app.MapGet("/api/Rest/KillAll",
-	(IMonitorService monitorService) =>
-	{
-		monitorService.KillAll();
-		return Results.Ok();
-	}).WithName("KillAll").WithTags("Api v1");
-
-app.MapGet("/api/Rest/StartAll",
-	(IMonitorService monitorService) =>
-	{
-		monitorService.StartAll();
-		return Results.Ok();
-	}).WithName("StartAll").WithTags("Api v1");
-
-app.MapGet("/api/Rest/GetAllCsProjs",
-    (IMonitorService monitorService) =>
-    {
-        return Results.Ok(monitorService.GetAllCsprojs());
-    }).WithName("GetAllCsProjs").WithTags("Api v1");
-
-app.MapGet("/api/Rest/GetAllCsProjForBuild",
-	(IMonitorService monitorService) =>
-	{
-		return Results.Ok(monitorService.GetAllCsprojForBuild());
-	}).WithName("GetAllCsProjForBuild").WithTags("Api v1");
-
-app.MapGet("/api/Rest/GetAllCsProjForPublish",
-    (IMonitorService monitorService) =>
-    {
-        return Results.Ok(monitorService.GetAllCsProjForPublish());
-    }).WithName("GetAllCsProjForPublish").WithTags("Api v1");
-
-app.MapGet("/api/Rest/GetAllDeployedFoldersToCopy",
-    (IMonitorService monitorService) =>
-    {
-        return Results.Ok(monitorService.GetAllDeployedFoldersToCopy());
-    }).WithName("GetAllDeployedFolders").WithTags("Api v1");
-
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -133,5 +126,7 @@ app.MapFallbackToPage("/_Host");
 
 //RestRunner.Run(args);
 app.UseCors("AllowAll");
+
+app.MapControllers();
 
 app.Run();

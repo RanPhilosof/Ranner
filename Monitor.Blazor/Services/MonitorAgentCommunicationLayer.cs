@@ -1,6 +1,7 @@
 ﻿using AppMonitoring.SharedTypes;
 using Microsoft.Extensions.Logging;
 using Monitor.Blazor.Interfaces;
+using Monitor.Infra.LogSink;
 using Montior.Blazor.Data;
 using Newtonsoft.Json;
 using System.Net;
@@ -25,6 +26,7 @@ namespace Monitor.Services
 
             monitorService.SetMonitorAgentSettingsHandler = SetMonitorAgentSettings;
 			monitorService.GetVmInfoAndListProcessInstaceInfoHandler = GetVmInfoAndListProcessInstaceInfo;
+			monitorService.GetVmLogsHandler = GetVmLogs;
 			monitorService.SetCompilerRequestHandler = SetCompilerRequest;
 			monitorService.GenericCommandHandler = GenericCommand;
 		}
@@ -55,7 +57,17 @@ namespace Monitor.Services
 			return infos;
 		}
 
-		private static T GetObject<T>(HttpClient httpClient, string ipAdd, string ipPort, string link, ILogger logger)
+        private List<LogInfo> GetVmLogs(IpAddress address)
+        {
+            var ipAdd = address.Ip;
+            var ipPort = address.Port;
+
+            var infos = GetObject<List<LogInfo>>(httpClient, ipAdd, ipPort, "api/MonitorAgent/GetLogs", _logger);
+
+            return infos;
+        }
+
+        private static T GetObject<T>(HttpClient httpClient, string ipAdd, string ipPort, string link, ILogger logger)
 		{
 			T value = default;
 

@@ -1,14 +1,20 @@
 using AppMonitoring.SharedTypes;
 using CommandLine;
+using Microsoft.AspNetCore.Mvc;
+using Monitor.Blazor.Converters;
 using Monitor.Blazor.Interfaces;
+using Monitor.Infra;
+using Monitor.Infra.LogSink;
 using Montior.Blazor.Data;
 using MudBlazor;
 using MudBlazor.Extensions;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Reactive;
 using System.Runtime.InteropServices;
 using static MudBlazor.CategoryTypes;
 
@@ -64,12 +70,16 @@ namespace Monitor.Blazor.Services
 	{
 		private Timer updateTimer;
 		private int fetchInfoFromAgentsTimerTimeInterval_mSec = 5000;
-
-		public MonitorAgentService(ILogger<MonitorAgentService> logger)
+        private ConcurrentQueue<LogInfo> _logsQueue;
+		public MonitorAgentService(
+            ILogger<MonitorAgentService> logger,
+			ConcurrentQueue<LogInfo> logsQueue)
         {
-			//Debugger.Launch();
+            //Debugger.Launch();
 
-	        _logger = logger;
+            _logsQueue = logsQueue;
+
+			_logger = logger;
 
 			var parsedArgs = Parser.Default.ParseArguments<BlazorOptions>(Environment.GetCommandLineArgs());
 
@@ -110,7 +120,21 @@ namespace Monitor.Blazor.Services
 
                 bool dontForceBlazorConfigurationFloderToPublish = parsedArgs.Value.DontForceBlazorConfigurationFloderToPublish;
 
-                var files = parsedArgs.Value.MultiConfigurationFiles.Split(",").Where(x => !string.IsNullOrEmpty(x)).ToList();
+                var jsonEnvironmentArgs = parsedArgs.Value.MultiConfigurationFiles.Split(",").Where(x => !string.IsNullOrEmpty(x)).ToList();
+                
+                var files = new List<string>();
+                foreach (var env in jsonEnvironmentArgs)
+                {
+                    if (!string.IsNullOrEmpty(env))
+                    {
+                        string? filePath = Environment.GetEnvironmentVariable(env);
+                        if (filePath != null)
+                        {
+                            files.Add(filePath);
+                        }
+                    }
+                }
+
                 var filesWithRootDir = new List<Tuple<string, string>>();
 
                 foreach (var file in files)
@@ -136,7 +160,8 @@ namespace Monitor.Blazor.Services
                     appsStartState,
                     !dontForceBlazorConfigurationFloderToPublish);
 
-				_logger.LogInformation("Will attempt to start with a MultiConfigurationFiles file: {MultiConfigurationFiles}",
+				_logger.LogInformation("Will attempt to start with a MultiConfigurationFiles. " +
+                                       "The file pathes are defined in the following environment variables: {MultiConfigurationFiles}",
 									   parsedArgs.Value.MultiConfigurationFiles);
 				return;
 			}            
@@ -179,7 +204,37 @@ namespace Monitor.Blazor.Services
                     string settingsJson = File.ReadAllText(fullPath.Item1);
                     var instancesDataClone = JsonConvert.DeserializeObject<MonitorPageSettings>(settingsJson);
 
-					if (!string.IsNullOrEmpty(activeGroupsOverride))
+                    foreach (var instanceData in instancesDataClone.InstancesData.Instances)
+                    {
+                        string ProjectAndInstanceName = RemoveSpaces(instancesDataClone.InstancesData.Project) +
+                                                        RemoveSpaces(instanceData.Name);
+
+                        var currentInstancesPackageFolderEnvName = ProjectAndInstanceName + "PackageFolder";
+                        var packageFolderEnvValue = Environment.GetEnvironmentVariable(currentInstancesPackageFolderEnvName);
+                        if (packageFolderEnvValue != null)
+                        {
+                            instanceData.PackageFolder = packageFolderEnvValue;
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Failed to get PackageFolder from env of instance {name}, " +
+                                               "dont set this instance", instanceData.Name);
+                        }
+
+                        var currentInstancesRootFolderEnvName = ProjectAndInstanceName + "RootFolder";
+                        var rootFolderEnvValue = Environment.GetEnvironmentVariable(currentInstancesRootFolderEnvName);
+                        if (rootFolderEnvValue != null)
+                        {
+                            instanceData.RootFolder = rootFolderEnvValue;
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Failed to get RootFolder from env of instance {name}, " +
+                                               "dont set this instance", instanceData.Name);
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(activeGroupsOverride))
 						instancesDataClone.InstancesData.ActiveGroups = activeGroupsOverride;
 
 					if (!string.IsNullOrEmpty(activeProjectOverride))
@@ -307,7 +362,7 @@ namespace Monitor.Blazor.Services
                 }
 
                 foreach (var kvp in vmDataVars)
-                    vmData.ExtraVariables.Add(new KeyValue() { Key = kvp.Key, Value = kvp.Value });
+                    vmData.ExtraVariables.Add(new KeyValueComplex() { Key = kvp.Key, Value = kvp.Value });
 
                 var vmDataCompilers = new Dictionary<string, string>();
 
@@ -399,6 +454,10 @@ namespace Monitor.Blazor.Services
 			return combinedSettings;
 		}
 
+        private string RemoveSpaces(string str)
+        {
+            return str.Replace(" ", "");
+        }
 		private void LoadLastConfiguration()
 		{
 			_logger.LogInformation("Loading Last Configuration file: {LastConfigurationFile}", lastConfigFileName);
@@ -429,6 +488,7 @@ namespace Monitor.Blazor.Services
 		public Action<IpAddress, CompileInfo> SetCompilerRequestHandler { get; set; }
 		public Action<IpAddress, MonitorAgentSettings> SetMonitorAgentSettingsHandler { get; set; }
 		public Func<IpAddress, Tuple<VmInfo, List<ProcessInstanceInfo>>> GetVmInfoAndListProcessInstaceInfoHandler { get; set; }
+        public Func<IpAddress, List<LogInfo>> GetVmLogsHandler { get; set; }
         public Action<IpAddress, GenericCommand> GenericCommandHandler { get; set; }
 		#endregion Event Driven Triggers
 
@@ -436,6 +496,11 @@ namespace Monitor.Blazor.Services
         {
             return GetVmInfoAndListProcessInstaceInfoHandler?.Invoke(ipAddress);
 		}
+
+        public List<LogInfo> GetVmLogs(IpAddress ipAddress)
+        {
+            return GetVmLogsHandler?.Invoke(ipAddress);
+        }
 
         public Dictionary<string, Tuple<VmInfo, Dictionary<int, ProcessInstanceInfo>>> GetAgentsPeriodicInfos()
         {
@@ -457,7 +522,45 @@ namespace Monitor.Blazor.Services
 			}
 		}
 
-		public void UpdateAgentsPeriodicInfos()
+        public List<LogInfo> GetCurrentLogs()
+        {
+            var logs = new List<LogInfo>();
+
+			var logsCount = _logsQueue.Count;
+			for (int i = 0; i < logsCount; i++)
+				if (_logsQueue.TryDequeue(out var log))
+					logs.Add(log);
+
+			return logs;
+		}
+
+        public List<Tuple<string, List<LogInfo>>> GetAllVmsLogs()
+        {
+            var logs = new List<Tuple<string, List<LogInfo>>>();
+
+            var lAppliedSettings = GetCurrentSettings();
+
+            foreach (var vm in lAppliedSettings.VmsData.VmsDataList.Select(x => new { vmName = x.UniqueName, ipAdd = new IpAddress() { Ip = x.IpAddress, Port = x.Port } }))
+            {
+                try
+                {
+                    var vLogs = new List<LogInfo>();
+                    var v = GetVmLogs(vm.ipAdd);
+                    vLogs.AddRange(v);
+                    var vmLogs = Tuple.Create(vm.vmName, vLogs);
+                    
+                    logs.Add(vmLogs);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogInformation(ex.ToString());
+                }
+            }
+
+            return logs;
+        }
+
+        public void UpdateAgentsPeriodicInfos()
         {
             var lAppliedSettings = GetCurrentSettings();
 
@@ -513,9 +616,14 @@ namespace Monitor.Blazor.Services
         }
 
 		private const string lastConfigFileName = "lastConfigFileName.json";
-		private const string presetsFolder = "Presets";
+		private string presetsFolder = "Presets";
 		private const string projectsFilePath = "Projects/ProjectsNames.json";
 		private const string userSettingsFolder = "UserSettings";
+
+        public void SetPresetsFolder(string folder)
+        {
+            presetsFolder = folder;
+        }
 
         public string UserFileClosetAvailableName(string presetName)
         {			
@@ -540,7 +648,7 @@ namespace Monitor.Blazor.Services
         {
             var file = Path.Combine(presetsFolder, presetName) + ".json";
 
-            return GetSettingsFromFullPath(file);
+            return IMonitorService.GetSettingsFromFullPath(file);
 
 		}
 		public MonitorPageSettings GetSettingsFromUserSettings(string userSettingsName)
@@ -549,43 +657,33 @@ namespace Monitor.Blazor.Services
 			
 			_logger.LogInformation("Loading settings from {UserSettingsName}", file);
 
-			return GetSettingsFromFullPath(file);
-		}
-
-		private static MonitorPageSettings GetSettingsFromFullPath(string path)
-        {
-	        string fullPath = Path.GetFullPath(path);
-	        if (!File.Exists(fullPath))
-	        {
-		        throw new FileNotFoundException($"File {fullPath} doesn't exist");
-	        }
-			string settingsJson = File.ReadAllText(path);
-			var instancesDataClone = JsonConvert.DeserializeObject<MonitorPageSettings>(settingsJson);
-
-            return instancesDataClone;
+			return IMonitorService.GetSettingsFromFullPath(file);
 		}
 
 		public List<string> GetPresetsSettingsList()
         {
+            if (!Directory.Exists(presetsFolder))
+                return new List<string>();
+
 			var files = Directory.GetFiles(presetsFolder, "*.json");
 			return new (files.ToList().Select(x => Path.GetFileNameWithoutExtension(x)));
 		}
 
-		public List<string> GetPossibleProjectsList()
-        {
-            var projects = new List<string>();
-
-            try
-            {
-                projects = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(Path.Combine(presetsFolder, projectsFilePath)));
-            }
-            catch (Exception ex) 
-            {
-                _logger.LogInformation(ex.ToString());                
-            }
-
-            return projects;
-        }
+		//public List<string> GetPossibleProjectsList()
+        //{
+        //    var projects = new List<string>();
+        //
+        //    try
+        //    {
+        //        projects = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(Path.Combine(presetsFolder, projectsFilePath)));
+        //    }
+        //    catch (Exception ex) 
+        //    {
+        //        _logger.LogInformation(ex.ToString());                
+        //    }
+        //
+        //    return projects;
+        //}
 
         public void KillAll()
         {
@@ -628,7 +726,10 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
-                        lastAppliedSettings.GroupTags,
+						lastAppliedSettings.Configuration,
+						lastAppliedSettings.ImagesVariables,
+						lastAppliedSettings.GlobalVariables,
+						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
                         lastAppliedSettings.InstancesData);
 
@@ -678,7 +779,10 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
-                        lastAppliedSettings.GroupTags,
+						lastAppliedSettings.Configuration,
+						lastAppliedSettings.ImagesVariables,
+						lastAppliedSettings.GlobalVariables,
+						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
                         lastAppliedSettings.InstancesData);
 
@@ -710,7 +814,10 @@ namespace Monitor.Blazor.Services
             {
                 var monitorAgentObjects =
                     CreateMonitorAgentObjects(
-                        lastAppliedSettings.GroupTags,
+						lastAppliedSettings.Configuration,
+						lastAppliedSettings.ImagesVariables,
+						lastAppliedSettings.GlobalVariables,
+						lastAppliedSettings.GroupTags,
                         lastAppliedSettings.VmsData,
                         lastAppliedSettings.InstancesData);
 
@@ -742,6 +849,9 @@ namespace Monitor.Blazor.Services
 			{
 				var monitorAgentObjects = 
                     CreateMonitorAgentObjects(
+						lastAppliedSettings.Configuration,
+						lastAppliedSettings.ImagesVariables,
+						lastAppliedSettings.GlobalVariables,
 						lastAppliedSettings.GroupTags, 
                         lastAppliedSettings.VmsData, 
                         lastAppliedSettings.InstancesData);
@@ -782,19 +892,32 @@ namespace Monitor.Blazor.Services
 
 				if (!dontSave)
                 {
+                    if (!Directory.Exists(userSettingsFolder))
+                        Directory.CreateDirectory(userSettingsFolder);
+
                     File.WriteAllText(Path.Combine(userSettingsFolder, monitorPageSettings.CurrentFileName + ".json"), JsonConvert.SerializeObject(monitorPageSettings, Formatting.Indented));
                     File.WriteAllText(lastConfigFileName, monitorPageSettings.CurrentFileName + ".json");
                 }
 
-                var monitorAgentObjects = CreateMonitorAgentObjects(monitorPageSettings.GroupTags, monitorPageSettings.VmsData, monitorPageSettings.InstancesData);
+                var monitorAgentObjects = CreateMonitorAgentObjects(
+					monitorPageSettings.Configuration,
+					monitorPageSettings.ImagesVariables,
+					monitorPageSettings.GlobalVariables, 
+                    monitorPageSettings.GroupTags, 
+                    monitorPageSettings.VmsData, 
+                    monitorPageSettings.InstancesData);
 
                 Task.Run(
                     () =>
                     {
                         foreach (var agentObject in monitorAgentObjects)
                         {
-							agentObject.Value.Item2.VmInstanceSettings.GuidString = lastGuidString;
-							SetMonitorAgentSettingsHandler?.Invoke(agentObject.Value.Item1, agentObject.Value.Item2);
+                            try
+                            {
+                                agentObject.Value.Item2.VmInstanceSettings.GuidString = lastGuidString;
+                                SetMonitorAgentSettingsHandler?.Invoke(agentObject.Value.Item1, agentObject.Value.Item2);
+                            }
+                            catch { }
                         }
                     });
 
@@ -826,7 +949,10 @@ namespace Monitor.Blazor.Services
         }
 
 		private Dictionary<string, Tuple<IpAddress, MonitorAgentSettings>> CreateMonitorAgentObjects(
-            UI_GroupTags groupTagsClone,
+			UI_Configuration configurationClone,
+			UI_ImagesVariables imagesVariablesClone,            
+			UI_GlobalVariables globalVariablesClone,
+			UI_GroupTags groupTagsClone,
             UI_VmsData vmsDataClone,
             UI_InstancesData instancesDataClone)
         {
@@ -865,45 +991,25 @@ namespace Monitor.Blazor.Services
             }
 			#endregion Combine Inherit Tags
 
+
 			#region Add Environment Variables Of All Service IPs
+			var parametersTreeInitiator = new ParametersTreeInitiator();
+
+			var tree = parametersTreeInitiator.Create(
+                globalVariablesClone, 
+                vmsDataClone,
+				instancesDataClone);
+
+            // Add Here To Global Parameters (The Right Place Is Session Parameters But It Is Not Exist Yet)            
+
+
+			ParametersTreeInitiator.ResolveAllParameters(tree);
+			var mapService = ParametersTreeInitiator.BuildResolvedMapPerService(tree);
 
 			var instanceByIdEnvVars = new Dictionary<int, List<KeyValue>>();
-            foreach (var instance in instancesDataClone.Instances)
-                if (!instanceByIdEnvVars.ContainsKey(instance.Id))
-					instanceByIdEnvVars.Add(instance.Id, new List<KeyValue>());
 
-			var servicesNameAndAddress = new List<Tuple<int, string, string, string>>();
-            var vmsByName = vmsDataClone.VmsDataList.ToDictionary(x => x.UniqueName, x => x);
-			foreach (var instance in instancesDataClone.Instances)
-            {
-                if (vmsByName.ContainsKey(instance.VmUniqueName))
-                    servicesNameAndAddress.Add(Tuple.Create(instance.Id, instance.RestApiPort, instance.Name, vmsByName[instance.VmUniqueName].IpAddress));
-			}
-
-            foreach (var instance in instancesDataClone.Instances)
-            {
-				instanceByIdEnvVars[instance.Id].AddRange(instance.ExtraVariables.Select(x => new KeyValue() { Key = x.Key, Value = x.Value }));
-
-                if (!string.IsNullOrEmpty(instance.Name))
-                    instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = "Services:MyService:Name", Value = instance.Name });
-
-                if (!string.IsNullOrEmpty(instance.InstanceId))
-					instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = "Services:MyService:InstanceId", Value = instance.InstanceId });
-
-                if (!string.IsNullOrEmpty(instance.RestApiPort))
-                {                    
-                    instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:MyService:RestApiPort", Value = instance.RestApiPort });
-
-                    _logger.LogInformation($"{instance.Id}: {instanceByIdEnvVars[instance.Id][instanceByIdEnvVars[instance.Id].Count - 1].Key} = {instanceByIdEnvVars[instance.Id][instanceByIdEnvVars[instance.Id].Count - 1].Value}");
-				}
-
-				foreach (var serviceNameAndAddress in servicesNameAndAddress)
-                {
-                    instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:Ip", Value = serviceNameAndAddress.Item4 });
-					if (!string.IsNullOrEmpty(serviceNameAndAddress.Item2))
-                        instanceByIdEnvVars[instance.Id].Add(new KeyValue() { Key = $"Services:{serviceNameAndAddress.Item3}:RestApiPort", Value = serviceNameAndAddress.Item2 });
-				}
-            }
+            foreach (var mapped in mapService)
+                instanceByIdEnvVars[mapped.Key.Id] = mapped.Value.Select(x => new KeyValue() { Key = x.Key, Value = x.ResolvedValue }).ToList();
 
 			#endregion Add Environment Variables Of All Service IPs
 
@@ -926,8 +1032,8 @@ namespace Monitor.Blazor.Services
                         foreach (var compiler in vmData.Compilers)
                             monitorAgentSettings.VmInstanceSettings.CompileTool.Add(Tuple.Create(compiler.CompilerName, compiler.CompilerPath));
 
-						foreach (var extraVariables in vmData.ExtraVariables)
-							monitorAgentSettings.VmInstanceSettings.Variables.Add(Tuple.Create(extraVariables.Key, extraVariables.Value));
+						//foreach (var extraVariables in vmData.ExtraVariables)
+						//	monitorAgentSettings.VmInstanceSettings.Variables.Add(Tuple.Create(extraVariables.Key, extraVariables.Value));
 					}
                 }
 
@@ -954,7 +1060,7 @@ namespace Monitor.Blazor.Services
                         ApplicationFileName = instance.ApplicationFileName,
                         ApplicationPath = instance.ApplicationPath,
                         ApplicationWorkingDirectory = instance.ApplicationWorkingDirectory,
-						RestApiPort = instance.RestApiPort,
+						RestApiPort = instance.RestApiPort,                        
 						InstanceId = instance.InstanceId,
 						Arguments = arguments,
                         CsProj = instance.CsProj,
@@ -973,22 +1079,61 @@ namespace Monitor.Blazor.Services
 				foreach (var inst in vmSettings.Item2.ProcessInstancesSettings)
 				{
 					if (instancesDataClone.Project != null)
-					{
-						inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
-						inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.ConfigurationTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).Configuration);
-						inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
-						inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
+					{					
+                        {
+                            inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
+                            inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.ConfigurationTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).Configuration);
+                            inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
 
-						inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
-						inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.ConfigurationTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).Configuration);
-						inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
-						inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
+                            inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
+                            inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.ConfigurationTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).Configuration);
+                            inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
 
-						inst.ApplicationFileName = inst.ApplicationFileName.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
+                            inst.ApplicationFileName = inst.ApplicationFileName.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
 
-						inst.CsProj = inst.CsProj.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
-						inst.CsProj = inst.CsProj.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
-						inst.CsProj = inst.CsProj.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
+                            inst.CsProj = inst.CsProj.Replace(UI_InstancesData.ProjectTemplateString, instancesDataClone.Project);
+                            inst.CsProj = inst.CsProj.Replace(UI_InstancesData.packageFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).PackageFolder);
+                        }
+
+						var uiInstance = instancesDataClone.Instances.First(x => x.Id == inst.Id);
+						bool useImaged = false;
+						try
+						{
+							if (uiInstance.UseImage)
+							{
+								var imageInfo = imagesVariablesClone.SelectedImagesVariables.Where(x => x.UniqueName == uiInstance.ImageUniqueName).FirstOrDefault();
+								if (imageInfo != null)
+								{
+									inst.UseImage = true;
+									inst.ZipFileName = imageInfo.ZipFileInfo.FileName;
+									inst.UniqueImageName = uiInstance.ImageUniqueName;
+									inst.FolderToExtract = uiInstance.ImageExtractRootFolder.Replace(UI_InstancesData.ImageFolderTemplateString, Path.GetFileNameWithoutExtension(imageInfo.ZipFileInfo.FileName));
+
+									inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.RootFolderTemplateString, inst.FolderToExtract);
+									inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.RootFolderTemplateString, inst.FolderToExtract);
+									inst.CsProj = inst.CsProj.Replace(UI_InstancesData.RootFolderTemplateString, inst.FolderToExtract);
+
+									var ipAdd = configurationClone.Configuration.Where(x => x.Key == UI_Configuration.RannerMonitorIpAddressForAgents).FirstOrDefault().Value;
+									var portAdd = configurationClone.Configuration.Where(x => x.Key == UI_Configuration.RannerMonitorPortAddressForAgents).FirstOrDefault().Value;
+
+                                    inst.RannerMonitorBaseUrl = $"http://{ipAdd}:{portAdd}";
+
+									useImaged = true;
+								}
+							}
+						}
+						catch (Exception ex)
+						{
+							_logger.LogError(ex.ToString());
+							_logger.LogError($"Failed to use image on instance id {uiInstance.Id} ({uiInstance.Name}) using regular root folder params as a fallback");
+						}
+
+						if (!useImaged)
+                        {
+                            inst.ApplicationWorkingDirectory = inst.ApplicationWorkingDirectory.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
+                            inst.ApplicationPath = inst.ApplicationPath.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
+                            inst.CsProj = inst.CsProj.Replace(UI_InstancesData.RootFolderTemplateString, instancesDataClone.Instances.First(x => x.Id == inst.Id).RootFolder);
+                        }
 					}
 				}
 			}

@@ -6,7 +6,9 @@ public class UI_InstancesData
 	public const string ConfigurationTemplateString = "{configuration}";
 	public const string RootFolderTemplateString = "{rootFolder}";
 	public const string packageFolderTemplateString = "{packageFolder}";
+	public const string ImageFolderTemplateString = "{imageFolder}";
 
+	public List<string> PossibleProjects { get; set; } = new List<string>();
 	public string Project { get; set; } = string.Empty;
     public List<UI_Instance> Instances { get; set; } = new List<UI_Instance>();
 	public string ActiveGroups { 
@@ -64,11 +66,14 @@ public class UI_Instance
     public string VmUniqueName { get; set; } = string.Empty;
     public string Team { get; set; } = string.Empty;
 	public string Name { get; set; } = string.Empty;
+	public string SessionName { get; set; } = "Main";
     public bool RunOrStop { get; set; }
     public int StartDelayTime_mSec { get; set; }
 
 
 	#region Monitored Data - Readonly
+	[Newtonsoft.Json.JsonIgnore]
+	public string ZipFileName { get; set; } = string.Empty;
 	[Newtonsoft.Json.JsonIgnore]
 	public string ProcessName { get; set; } = string.Empty;
 	[Newtonsoft.Json.JsonIgnore]
@@ -81,7 +86,10 @@ public class UI_Instance
     #endregion Basic Table
     
     public bool ShowAdvancedConfigurations { get; set; }
-    public string RootFolder { get; set; } = string.Empty;
+	public string ImageUniqueName { get; set; } = string.Empty;
+	public string ImageExtractRootFolder { get; set; } = string.Empty;
+	public bool UseImage { get; set; } = false;
+	public string RootFolder { get; set; } = string.Empty;
 	public string PackageFolder { get; set; } = string.Empty;
 	public string Configuration { get; set; } = string.Empty;
     public string Arguments { get; set; } = string.Empty;
@@ -92,6 +100,7 @@ public class UI_Instance
 	public string ApplicationWorkingDirectory { get; set; } = string.Empty;
 	public string RestApiPort { get; set; } = string.Empty;
 	public string InstanceId { get; set; } = string.Empty;
+	public bool SupportProberMonitor { get; set; } = false;
 
 	public bool ShowInheritTagsFromGroup { get; set; }
 	public List<StringWrapper> InheritTagsFromGroup { get; set; } = new List<StringWrapper>();
@@ -100,7 +109,7 @@ public class UI_Instance
 	public string TagsStr { get; set; } = string.Empty;
 
 	public bool ShowExtraEnvironmentVariables { get; set; }
-    public List<KeyValue> ExtraVariables { get; set; } = new List<KeyValue>();
+    public List<KeyValueComplex> ExtraVariables { get; set; } = new List<KeyValueComplex>();
 
 	public bool Disabled { get; set; }
 	public bool DisabledByGroups { get; set; }
@@ -113,11 +122,20 @@ public class UI_Instance
 			return false;
 		if (Name != other.Name)
 			return false;
+		if (SessionName != other.SessionName) 
+			return false;
 		if (Team != other.Team) 
 			return false;
 		if (RunOrStop != other.RunOrStop)
 			return false;
 		if (StartDelayTime_mSec != other.StartDelayTime_mSec)
+			return false;
+
+		if (ImageExtractRootFolder != other.ImageExtractRootFolder)
+			return false;
+		if (ImageUniqueName != other.ImageUniqueName) 
+			return false;
+		if (UseImage != other.UseImage)
 			return false;
 
 		if (RootFolder != other.RootFolder)
@@ -140,7 +158,9 @@ public class UI_Instance
 			return false;
 		if (RestApiPort != other.RestApiPort)
 			return false;
-		if (InstanceId != other.InstanceId)
+		if (SupportProberMonitor != other.SupportProberMonitor)
+			return false;
+        if (InstanceId != other.InstanceId)
 			return false;
 
 
@@ -164,15 +184,21 @@ public class UI_Instance
 		if (ExtraVariables.Count != other.ExtraVariables.Count)
 			return false;
 
-		for (int i = 0; i <ExtraVariables.Count; i++)
-		{
-			if (ExtraVariables[i].Key != other.ExtraVariables[i].Key)
-				return false;
-			if (ExtraVariables[i].Value != other.ExtraVariables[i].Value)
-				return false;
-		}
+        for (int i = 0; i < ExtraVariables.Count; i++)
+        {
+            if (ExtraVariables[i].Active != other.ExtraVariables[i].Active)
+                return false;
+            if (ExtraVariables[i].DefaultValue != other.ExtraVariables[i].DefaultValue)
+                return false;
+            if (ExtraVariables[i].Description != other.ExtraVariables[i].Description)
+                return false;
+            if (ExtraVariables[i].Key != other.ExtraVariables[i].Key)
+                return false;
+            if (ExtraVariables[i].Value != other.ExtraVariables[i].Value)
+                return false;
+        }
 
-		if (Disabled != other.Disabled)
+        if (Disabled != other.Disabled)
 			return false;
 
 		if (DisabledByGroups != other.DisabledByGroups)
