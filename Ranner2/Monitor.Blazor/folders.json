@@ -1,0 +1,18 @@
+[
+  {    
+    "Path": "Presets",
+    "IsLocal": true
+  },
+  {    
+    "Path": "C:/Local/User1",
+    "IsLocal": false
+  },
+  {    
+    "Path": "C:/Local/User2",
+    "IsLocal": false
+  },
+  {
+    "Path": "C:/Local/Global",
+    "IsLocal": false
+  }  
+]

@@ -4,10 +4,13 @@
 @using Monitor.Blazor.Services
 @using Montior.Blazor.Data
 @using Newtonsoft.Json
+@using System.Text.Json
 
 @inject IMonitorService monitorAgentService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
 
 <MudGrid >
 	<MudCard Class="mt-4" Style="width: 98vw; padding-left: 20px; padding-right: 20px;">
@@ -48,20 +51,41 @@
 				<MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@Load">Load...</MudButton>
 			</MudCard>		
 		</MudPaper>
-		<MudPaper Class="pa-4 mt-4">
+@* 		<MudPaper Class="pa-4 mt-4">
 			<MudCard Style="padding-botom: 10px;">
 				<MudTextField Variant="Variant.Outlined" Color="Color.Primary" @bind-Value="activeConfigurationFileName" />
 			</MudCard>
-		</MudPaper>
+		</MudPaper> *@
 	</MudStack>
 	<MudStack Row="true">
 		<MudPaper Class="pa-4 mt-4">
-			<MudSelect @ref="presetsMudSelect" T="string" SelectedValuesChanged="OnSelectedPresetChanged" Label="Start From Preset" AdornmentIcon="@Icons.Material.Outlined.PhonelinkSetup">
-				@foreach (var preset in presets)
+			<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+				<MudSelect OnOpen="HandleSelectOpen" @ref="presetsMudSelect" T="string" SelectedValuesChanged="OnSelectedPresetChanged" Label="Start From Preset" AdornmentIcon="@Icons.Material.Outlined.ArrowDropDown">
+					@foreach (var preset in presets)
+					{
+						<MudSelectItem Value="@preset">@preset</MudSelectItem>
+					}
+				</MudSelect>
+				<MudIconButton Style="margin-top: 14px;" Size="Size.Medium" Variant="Variant.Filled" Icon="@Icons.Material.Outlined.FolderOpen" OnClick="OpenFolderMenu" />
+			</MudStack>
+
+			<MudMenu @ref="folderMenu" AnchorOrigin="Origin.BottomCenter">
+				@foreach (var folder in folderOptions)
 				{
-					<MudSelectItem Value="@preset">@preset</MudSelectItem>
+					<MudMenuItem OnClick="() => OnFolderSelected(folder)">
+						@if (selectedFolder?.Path == folder.Path)
+						{
+							<strong>@folder.Path</strong>
+						}
+						else
+						{
+							@folder.Path
+						}
+					</MudMenuItem>
 				}
-			</MudSelect>
+			</MudMenu>
+
+			@* <MudText Typo="Typo.subtitle1" Class="mt-2">Selected Folder: @selectedFolder?.Path</MudText> *@
 		</MudPaper>
 	</MudStack>
 </MudGrid>
@@ -79,6 +103,100 @@
 
 @code
 {
+	private void HandleSelectOpen()
+	{
+		InitPresetsList();
+		StateHasChanged();
+	}
+
+	private MudMenu folderMenu;
+	private List<FolderOption> folderOptions = new();
+	private FolderOption selectedFolder;
+	private FolderOption defaultFolder;
+
+	private const string LocalStorageKey = "SelectedFolderPath";
+
+	private bool _hasInitialized;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender && !_hasInitialized)
+		{
+			_hasInitialized = true;
+			await LoadFolderOptionsAsync();
+			monitorAgentService?.SetPresetsFolder(selectedFolder.Path);
+			InitPresetsList();
+			StateHasChanged(); // refresh UI with updated values
+		}
+	}
+
+	private void OpenFolderMenu()
+	{
+		folderMenu.OpenMenu(EventArgs.Empty);
+	}
+
+	private async Task OnFolderSelected(FolderOption folder)
+	{
+		if (await ValidateFolder(folder))
+		{
+			selectedFolder = folder;
+			await localStorage.SetItemAsync(LocalStorageKey, folder.Path);
+		}
+		else
+		{
+			selectedFolder = defaultFolder;
+		}
+
+		monitorAgentService?.SetPresetsFolder(selectedFolder.Path);
+
+		InitPresetsList();
+
+		StateHasChanged();
+	}
+
+	private Task<bool> ValidateFolder(FolderOption folder)
+	{
+		// Stub logic — replace with your real validation
+		return Task.FromResult(!string.IsNullOrWhiteSpace(folder?.Path));
+	}
+
+	private async Task LoadFolderOptionsAsync()
+	{
+		var folderFile = //Path.Combine(env.WebRootPath, 
+			"folders.json";
+		//);
+
+		if (!File.Exists(folderFile))
+		{
+			// Create default JSON if missing
+			folderOptions = new List<FolderOption>
+			{
+				new FolderOption { /* DisplayName = "Local Folder", */ Path = "C:/Local", IsLocal = true }
+			};
+
+			var defaultJson = System.Text.Json.JsonSerializer.Serialize(folderOptions, new JsonSerializerOptions { WriteIndented = true });
+			File.WriteAllText(folderFile, defaultJson);
+		}
+		else
+		{
+			var json = File.ReadAllText(folderFile);
+			folderOptions = System.Text.Json.JsonSerializer.Deserialize<List<FolderOption>>(json);
+		}
+
+		defaultFolder = folderOptions.FirstOrDefault(f => f.IsLocal);
+
+		var lastFolderPath = await localStorage.GetItemAsync<string>(LocalStorageKey);
+		var found = folderOptions.FirstOrDefault(f => f.Path == lastFolderPath);
+
+		selectedFolder = await ValidateFolder(found) ? found : defaultFolder;
+	}
+
+	public class FolderOption
+	{
+		//public string DisplayName { get; set; }
+		public string Path { get; set; }
+		public bool IsLocal { get; set; }
+	}
 
 
 	private MudSelect<string> presetsMudSelect;
@@ -436,7 +554,7 @@
 
 	protected override void OnInitialized()
 	{
-		InitPresetsList();
+
 
 		var m = monitorAgentService.GetCurrentSettings().Clone();
 
@@ -468,6 +586,7 @@
 
 	private void InitPresetsList()
 	{
+		presets.Clear();
 		presets.AddRange(monitorAgentService.GetPresetsSettingsList());
 		//possibleProjects = monitorAgentService.GetPossibleProjectsList();
 	}

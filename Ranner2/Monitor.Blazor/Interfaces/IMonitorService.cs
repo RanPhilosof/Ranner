@@ -44,6 +44,7 @@ namespace Monitor.Blazor.Interfaces
 		Dictionary<string, Tuple<VmInfo, Dictionary<int, ProcessInstanceInfo>>> GetAgentsPeriodicInfos();
 
 		List<LogInfo> GetCurrentLogs();
+        void SetPresetsFolder(string folder);
 	}
 
     public interface IMonitorHandlingAgents

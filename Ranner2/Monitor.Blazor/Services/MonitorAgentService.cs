@@ -616,9 +616,14 @@ namespace Monitor.Blazor.Services
         }
 
 		private const string lastConfigFileName = "lastConfigFileName.json";
-		private const string presetsFolder = "Presets";
+		private string presetsFolder = "Presets";
 		private const string projectsFilePath = "Projects/ProjectsNames.json";
 		private const string userSettingsFolder = "UserSettings";
+
+        public void SetPresetsFolder(string folder)
+        {
+            presetsFolder = folder;
+        }
 
         public string UserFileClosetAvailableName(string presetName)
         {			
@@ -657,6 +662,9 @@ namespace Monitor.Blazor.Services
 
 		public List<string> GetPresetsSettingsList()
         {
+            if (!Directory.Exists(presetsFolder))
+                return new List<string>();
+
 			var files = Directory.GetFiles(presetsFolder, "*.json");
 			return new (files.ToList().Select(x => Path.GetFileNameWithoutExtension(x)));
 		}

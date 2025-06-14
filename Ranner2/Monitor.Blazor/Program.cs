@@ -1,4 +1,5 @@
 using AppMonitoring.SharedTypes;
+using Blazored.LocalStorage;
 using CommandLine;
 using Monitor.Blazor.Interfaces;
 using Monitor.Blazor.Services;
@@ -11,6 +12,11 @@ using Serilog;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
+using System;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+
 
 if (!DebugerChecker.IsDebug && Environment.UserInteractive)
 {
@@ -73,6 +79,7 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
+builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
@@ -81,6 +88,7 @@ builder.Services.AddSingleton<IMonitorAgentCommunicationLayer, MonitorAgentCommu
 builder.Services.AddSingleton<IConsoleRunnerService, ConsoleRunnerServier>();
 builder.Services.AddSingleton<ILoggingService, LoggingService>();
 builder.Services.AddSingleton(logQueue);
+
 
 builder.Services.AddControllers();
 
@@ -97,7 +105,7 @@ if (!app.Environment.IsDevelopment())
 	// The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
 	app.UseHsts();
 }
-else
+//else
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
